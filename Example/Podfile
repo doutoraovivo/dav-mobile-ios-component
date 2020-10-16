@@ -1,0 +1,14 @@
+use_frameworks!
+platform :ios, '9.0'
+
+install! 'cocoapods', :disable_input_output_paths => true
+
+target 'DaV_Consultorio_SDK_Example' do
+  pod 'DaV_Consultorio_SDK', :path => '../'
+
+  target 'DaV_Consultorio_SDK_Tests' do
+    inherit! :search_paths
+
+    
+  end
+end

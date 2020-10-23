@@ -190,6 +190,7 @@
 				607FACCD1AFB9204008FA782 /* Frameworks */,
 				607FACCE1AFB9204008FA782 /* Resources */,
 				8133A03C5A3ED4E2E98CA450 /* [CP] Embed Pods Frameworks */,
+				DD47E691D892457B0741A361 /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -364,6 +365,21 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "# create folder where we place built frameworks\ncd ..\nrm -fr derived_data ${PROJECT_NAME}.framework \n\n# build framework for simulators\nxcodebuild clean build \\\n  -deviredDataPath derived_data \\\n  -sdk iphonesimulator\n  BUILD_LIBRARY_FOR_DISTRIBUTION=YES\n\n# build framework for simulators\nxcodebuild clean build \\\n  -deviredDataPath derived_data \\\n  -sdk iphoneos\n  BUILD_LIBRARY_FOR_DISTRIBUTION=YES\n\n\ncp -r Example/build/Release-iphonesimulator/${PROJECT_NAME}/${PROJECT_NAME}.framework build/simulator\n#build framework for devices\nxcodebuild build \\\n  -project _Pods.xcodeproj \\\n  -scheme ${PROJECT_NAME} \\\n  -configuration Release\n  -sdk iphoneos\n# create folder to store compiled framework for simulator\nmkdir -p build/devices\n# copy compiled framework for simulator into our build folder\ncp -r Example/build/Release-iphoneos/${PROJECT_NAME}/${PROJECT_NAME}.framework build/devices\n# create folder to store compiled universal framework\nmkdir -p build/universal\n####################### Create universal framework #############################\n# copy device framework into universal folder\ncp -r build/devices/${PROJECT_NAME}.framework .\n# create framework binary compatible with simulators and devices, and replace binary in unviersal framework\nlipo -create \\\n  build/simulator/${PROJECT_NAME}.framework/${PROJECT_NAME} \\\n  build/devices/${PROJECT_NAME}.framework/${PROJECT_NAME} \\\n  -output ${PROJECT_NAME}.framework/${PROJECT_NAME}\n# copy simulator Swift public interface to universal framework\ncp build/simulator/${PROJECT_NAME}.framework/Modules/${PROJECT_NAME}.swiftmodule/* ${PROJECT_NAME}.framework/Modules/${PROJECT_NAME}.swiftmodule\n\n#rm -fR build\n#rm -fR Example/build\n\nzip -r ${PROJECT_NAME}.zip LICENSE ${PROJECT_NAME}.framework\n";
+		};
+		DD47E691D892457B0741A361 /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[CP] Copy Pods Resources";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-DaV_Consultorio_SDK_Example/Pods-DaV_Consultorio_SDK_Example-resources.sh\"\n";
+			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
 

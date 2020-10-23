@@ -8,7 +8,7 @@
 
 Pod::Spec.new do |s|
   s.name             = 'DaV_Consultorio_SDK'
-  s.version          = '1.0.4'
+  s.version          = '1.0.5'
   s.summary          = 'Doutor ao Vivo - Consultorio Nativo'
 
   s.description      = <<-DESC
@@ -27,7 +27,7 @@ Pod::Spec.new do |s|
   s.resource_bundle = { 'Assets' => s.name + '/Assets/**/*' }
 
   s.source           = {
-    :git => 'https://github.com/doutoraovivo/dav-mobile-ios-component.git', :tag => '1.0.4'
+    :git => 'https://github.com/doutoraovivo/dav-mobile-ios-component.git', :tag => '1.0.5'
   }
   
   s.platform = :ios, '9.0'

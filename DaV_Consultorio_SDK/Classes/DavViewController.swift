@@ -210,7 +210,6 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
     
     public override func viewDidAppear(_ animated: Bool) {
         print("bundle: \(DavViewController.getBundle)")
-//        super.viewDidAppear(animated)
 
         SentrySDK.start { options in
             options.dsn = "https://efcccf8ecbdf493ebdd34eb88ee06f35@o412232.ingest.sentry.io/5289461"
@@ -219,9 +218,12 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
             options.enableAutoSessionTracking = true
         }
 
-        SentrySDK.configureScope { (scope) in
-            scope.setExtra(value: self.DAV_URL_ACCESS, key: "url")
-        }
+        let crumb = Breadcrumb()
+        crumb.level = SentryLevel.info
+        crumb.category = "url"
+        crumb.message = self.DAV_URL_ACCESS
+        
+        SentrySDK.addBreadcrumb(crumb: crumb)
         
         //observer for keyboard
         NotificationCenter.default.addObserver(self, selector: #selector(self.keyboardWillShow), name: NSNotification.Name.UIKeyboardWillShow, object: nil)
@@ -2092,6 +2094,23 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
 
     public func sessionDidDisconnect(_ session: OTSession) {
         print("The client disconnected from the OpenTok session.")
+        var alertTitle:String="Doutor Ao Vivo"
+        if (publisherName.count > 0) {
+            alertTitle = publisherName
+        }
+        alertMsg = "O atendimento foi finalizado"
+        subscriberView?.removeFromSuperview()
+        itemsSub.removeAll()
+        subViewPos = nil
+        subscriber = nil
+        subscriberView = nil
+        subscriberName = ""
+        let alertController = UIAlertController(title: alertTitle, message: alertMsg, preferredStyle: UIAlertController.Style.alert)
+        alertController.addAction(UIAlertAction(title: "Sair da Sala", style: UIAlertAction.Style.default, handler: { action in
+            self.closeSala()
+            self.closeView()
+        }))
+        present(alertController, animated: true, completion: nil)
     }
 
     public func session(_ session: OTSession, didFailWithError error: OTError) {

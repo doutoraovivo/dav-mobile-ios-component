@@ -778,7 +778,8 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
         let importMenu = UIDocumentPickerViewController(documentTypes: ["public.content"], in: .import)
         
         importMenu.delegate = self
-        importMenu.modalPresentationStyle = .formSheet
+        importMenu.modalPresentationStyle = .overCurrentContext
+        print("\(Date())")
         
         self.present(importMenu, animated: true, completion: nil)
     }

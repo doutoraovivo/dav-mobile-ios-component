@@ -17,7 +17,7 @@
                BlueprintIdentifier = "607FACCF1AFB9204008FA782"
                BuildableName = "DaV_Consultorio_SDK_Example.app"
                BlueprintName = "DaV_Consultorio_SDK_Example"
-               ReferencedContainer = "container:arch.xcodeproj">
+               ReferencedContainer = "container:DaV_Consultorio_SDK.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
          <BuildActionEntry
@@ -31,7 +31,7 @@
                BlueprintIdentifier = "607FACE41AFB9204008FA782"
                BuildableName = "DaV_Consultorio_SDK_Tests.xctest"
                BlueprintName = "DaV_Consultorio_SDK_Tests"
-               ReferencedContainer = "container:arch.xcodeproj">
+               ReferencedContainer = "container:DaV_Consultorio_SDK.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -47,7 +47,7 @@
             BlueprintIdentifier = "607FACCF1AFB9204008FA782"
             BuildableName = "DaV_Consultorio_SDK_Example.app"
             BlueprintName = "DaV_Consultorio_SDK_Example"
-            ReferencedContainer = "container:arch.xcodeproj">
+            ReferencedContainer = "container:DaV_Consultorio_SDK.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
       <Testables>
@@ -58,7 +58,7 @@
                BlueprintIdentifier = "607FACE41AFB9204008FA782"
                BuildableName = "DaV_Consultorio_SDK_Tests.xctest"
                BlueprintName = "DaV_Consultorio_SDK_Tests"
-               ReferencedContainer = "container:arch.xcodeproj">
+               ReferencedContainer = "container:DaV_Consultorio_SDK.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -80,7 +80,7 @@
             BlueprintIdentifier = "607FACCF1AFB9204008FA782"
             BuildableName = "DaV_Consultorio_SDK_Example.app"
             BlueprintName = "DaV_Consultorio_SDK_Example"
-            ReferencedContainer = "container:arch.xcodeproj">
+            ReferencedContainer = "container:DaV_Consultorio_SDK.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -97,7 +97,7 @@
             BlueprintIdentifier = "607FACCF1AFB9204008FA782"
             BuildableName = "DaV_Consultorio_SDK_Example.app"
             BlueprintName = "DaV_Consultorio_SDK_Example"
-            ReferencedContainer = "container:arch.xcodeproj">
+            ReferencedContainer = "container:DaV_Consultorio_SDK.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

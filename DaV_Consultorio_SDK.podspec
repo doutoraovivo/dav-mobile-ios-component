@@ -8,7 +8,7 @@
 
 Pod::Spec.new do |s|
   s.name             = 'DaV_Consultorio_SDK'
-  s.version          = '1.0.5'
+  s.version          = '1.0.6'
   s.summary          = 'Doutor ao Vivo - Consultorio Nativo'
 
   s.description      = <<-DESC
@@ -18,16 +18,12 @@ Pod::Spec.new do |s|
   s.homepage         = 'https://www.doutoraovivo.com.br'
   s.license          = { :type => 'MIT', :file => 'LICENSE' }
   s.author           = { 'Luciano Jesus LIma' => 'luciano@doutoraovivo.com.br' }
-#  s.source           = {
-#    :http => 'https://devops.doutoraovivo.com.br/repository/raw-dav/ios/release/' + s.version.to_s + '/' + s.name + '.zip'
-#  }
-#  s.vendored_frameworks = 'DaV_Consultorio_SDK.framework'
 
   s.source_files = s.name + '/Classes/*.swift'
   s.resource_bundle = { 'Assets' => s.name + '/Assets/**/*' }
 
   s.source           = {
-    :git => 'https://github.com/doutoraovivo/dav-mobile-ios-component.git', :tag => '1.0.5'
+    :git => 'https://github.com/doutoraovivo/dav-mobile-ios-component.git', :tag => s.version.to_s
   }
   
   s.platform = :ios, '9.0'

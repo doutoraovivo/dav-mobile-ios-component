@@ -778,7 +778,7 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
         let importMenu = UIDocumentPickerViewController(documentTypes: ["public.content"], in: .import)
         
         importMenu.delegate = self
-        importMenu.modalPresentationStyle = UIModalPresentationStyle.fullScreen
+        importMenu.modalPresentationStyle = .formSheet
         
         self.present(importMenu, animated: true, completion: nil)
     }

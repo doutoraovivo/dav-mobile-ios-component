@@ -35,7 +35,7 @@ public class ArchiveViewController: UIViewController, UITableViewDelegate, UITab
     public var publisherId:String = ""
     public var publisherName:String = ""
     
-    override public func viewDidLoad() {
+    override public func viewDidAppear(_ animated: Bool) {
         let screenBounds = UIScreen.main.bounds
         self.view.frame = CGRect(x: 0, y: 0, width: CGFloat(screenBounds.width), height: listHeight!)
         //toolbar superior

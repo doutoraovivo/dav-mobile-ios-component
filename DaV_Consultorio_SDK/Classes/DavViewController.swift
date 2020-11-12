@@ -212,7 +212,7 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
         print("bundle: \(DavViewController.getBundle)")
 
         SentrySDK.start { options in
-            options.dsn = "https://efcccf8ecbdf493ebdd34eb88ee06f35@o412232.ingest.sentry.io/5289461"
+            options.dsn = "https://6d7482976fa84c84b4193203f9fd1564@o412232.ingest.sentry.io/5294139"
             options.debug = true // Enabled debug when first installing is always helpful
             options.environment = Bundle.main.bundleIdentifier
             options.enableAutoSessionTracking = true
@@ -599,40 +599,69 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
             self.fileShareList.append(FileShare(fileShareDate: fileDate, fileShareEncoded: fileEncoded, fileSharePath: filePath, fileShareName: fileName, fileShareParticipant: fileParticipant))
         }
     }
+
+    
+    func closePublisher(_pubView: inout UIView?, _pub: inout OTPublisher?) {
+        var error: OTError?
+        session!.unpublish(_pub!, error: &error)
+        _pubView!.removeFromSuperview()
+        _pub!.publishVideo = false
+        _pub!.publishAudio = false
+        
+        //
+        _pubView = nil;
+        _pub = nil;
+    }
+    
+    func closeSubscriber(_subView: inout UIView?, _sub: inout OTSubscriber?) {
+        var error: OTError?
+        session!.unsubscribe(_sub!, error: &error)
+        _subView!.removeFromSuperview()
+        _sub!.subscribeToVideo = false
+        _sub!.subscribeToAudio = false
+        
+        //
+        _subView = nil
+        _sub = nil
+    }
     
     func closeSala() {
-        var error: OTError?
+//        var error: OTError? // TODO Passando o trator
         if (publisher != nil) {
-            session!.unpublish(publisher!, error: &error)
-            publisherView?.removeFromSuperview()
-            publisherView = nil
-            publisher = nil
-            publisher?.publishVideo = false
-            publisher?.publishAudio = false
+            closePublisher(_pubView: &publisherView, _pub: &publisher)
+//            session!.unpublish(publisher!, error: &error)
+//            publisherView?.removeFromSuperview()
+//            publisherView = nil
+//            publisher = nil
+//            publisher?.publishVideo = false
+//            publisher?.publishAudio = false
         }
         if (subscriber != nil) {
-            session!.unsubscribe(subscriber!, error: &error)
-            subscriberView?.removeFromSuperview()
-            subscriberView = nil
-            subscriber = nil
-            subscriber?.subscribeToVideo = false
-            subscriber?.subscribeToAudio = false
+            closeSubscriber(_subView: &subscriberView, _sub: &subscriber)
+//            session!.unsubscribe(subscriber!, error: &error)
+//            subscriberView?.removeFromSuperview()
+//            subscriberView = nil
+//            subscriber = nil
+//            subscriber?.subscribeToVideo = false
+//            subscriber?.subscribeToAudio = false
         }
         if (subscriber2 != nil) {
-            session!.unsubscribe(subscriber2!, error: &error)
-            subscriberView2?.removeFromSuperview()
-            subscriberView2 = nil
-            subscriber2 = nil
-            subscriber2?.subscribeToVideo = false
-            subscriber2?.subscribeToAudio = false
+            closeSubscriber(_subView: &subscriberView2, _sub: &subscriber2)
+//            session!.unsubscribe(subscriber2!, error: &error)
+//            subscriberView2?.removeFromSuperview()
+//            subscriberView2 = nil
+//            subscriber2 = nil
+//            subscriber2?.subscribeToVideo = false
+//            subscriber2?.subscribeToAudio = false
         }
         if (subscriber3 != nil) {
-            session!.unsubscribe(subscriber3!, error: &error)
-            subscriberView3?.removeFromSuperview()
-            subscriberView3 = nil
-            subscriber3 = nil
-            subscriber3?.subscribeToVideo = false
-            subscriber3?.subscribeToAudio = false
+            closeSubscriber(_subView: &subscriberView3, _sub: &subscriber3)
+//            session!.unsubscribe(subscriber3!, error: &error)
+//            subscriberView3?.removeFromSuperview()
+//            subscriberView3 = nil
+//            subscriber3 = nil
+//            subscriber3?.subscribeToVideo = false
+//            subscriber3?.subscribeToAudio = false
         }
     }
     
@@ -779,7 +808,6 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
         
         importMenu.delegate = self
         importMenu.modalPresentationStyle = .overCurrentContext
-        print("\(Date())")
         
         self.present(importMenu, animated: true, completion: nil)
     }
@@ -1499,48 +1527,58 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
     }
     
     func defineView(_ screenSize: CGSize, _ viewPos: Int) -> CGRect {
-        var posX:Int?
-        var posY:Int?
-        var viewWidth:Int?
-        var viewHeight:Int?
+        let availableHeight:Int = Int(screenSize.height - tbButtons!.frame.height - self.bottomLayoutGuide.length - self.topLayoutGuide.length);
+        let paddingHeight:Int = Int(tbButtons!.frame.height / 2);
+        let maxViews:Int = 4;
+        
+        var posX:Int
+        var posY:Int
+        var viewWidth:Int
+        var viewHeight:Int
         if (viewPos == 0) {
             posY = Int(self.topLayoutGuide.length)
             posX = 0
             viewWidth = Int(screenSize.width)
-            viewHeight = Int(screenSize.height - tbButtons!.frame.height - self.bottomLayoutGuide.length) - posY!
+//            viewHeight = Int(screenSize.height - tbButtons!.frame.height - self.bottomLayoutGuide.length) - posY!
+            viewHeight = availableHeight;
         } else {
             if (Int(screenSize.width) < 220) {
                 viewWidth = Int(screenSize.width) - 20
             } else {
                 viewWidth = Int((screenSize.width - 80) / 3)
-                if (viewWidth! < 180) { viewWidth = 180 }
+                if (viewWidth < 180) { viewWidth = 180 }
             }
-            viewHeight = Int((viewWidth!) * 3 / 4)
-            posY = Int(screenSize.height) - viewHeight! - 20 - Int(tbButtons!.frame.height) - Int(self.bottomLayoutGuide.length)
+//            viewHeight = Int((viewWidth!) * 3 / 4)
+//            posY = Int(screenSize.height) - viewHeight! - 20 - Int(tbButtons!.frame.height) - Int(self.bottomLayoutGuide.length)
+            
+            viewHeight = (availableHeight / maxViews);
+            posY = (availableHeight - (viewHeight * viewPos));
+            viewHeight = viewHeight - paddingHeight;
+            
             if (viewPos == 1) {
-                posX = Int(screenSize.width) - viewWidth! - 20
+                posX = Int(screenSize.width) - viewWidth - 20
             } else if (viewPos == 2) {
                 if (Int(screenSize.width) >= 420) {
-                    posX = Int(screenSize.width) - ((viewWidth! + 20) * 2)
+                    posX = Int(screenSize.width) - ((viewWidth + 20) * 2)
                 } else {
-                    posX = Int(screenSize.width) - viewWidth! - 20
-                    posY = Int(screenSize.height) - ((viewHeight! - 20) * 2) - Int(tbButtons!.frame.height) - Int(self.bottomLayoutGuide.length)
+                    posX = Int(screenSize.width) - viewWidth - 20
+//                    posY = Int(screenSize.height) - ((viewHeight! - 20) * 2) - Int(tbButtons!.frame.height) - Int(self.bottomLayoutGuide.length)
                 }
             } else if (viewPos == 3) {
                 if (Int(screenSize.width) >= 620) {
                     posX = 20
                 } else if (Int(screenSize.width) >= 420) {
-                    posX = Int(screenSize.width) - viewWidth! - 20
-                    posY = Int(screenSize.height) - ((viewHeight! - 20) * 2) - Int(tbButtons!.frame.height) - Int(self.bottomLayoutGuide.length)
+                    posX = Int(screenSize.width) - viewWidth - 20
+//                    posY = Int(screenSize.height) - ((viewHeight! - 20) * 2) - Int(tbButtons!.frame.height) - Int(self.bottomLayoutGuide.length)
                 } else {
-                    posX = Int(screenSize.width) - viewWidth! - 20
-                    posY = Int(screenSize.height) - ((viewHeight! - 20) * 3) - Int(tbButtons!.frame.height) - Int(self.bottomLayoutGuide.length)
+                    posX = Int(screenSize.width) - viewWidth - 20
+//                    posY = Int(screenSize.height) - ((viewHeight! - 20) * 3) - Int(tbButtons!.frame.height) - Int(self.bottomLayoutGuide.length)
                 }
             } else {
                 posX = 0
             }
         }
-        return CGRect(x: posX!, y: posY!, width: viewWidth!, height: viewHeight!)
+        return CGRect(x: posX, y: posY, width: viewWidth, height: viewHeight)
     }
 
     func setView(_ targetView: UIView, _ screenSize: CGSize, _ viewPos: Int) {
@@ -2214,7 +2252,11 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
                         itemsSub3.append(buttonMicSub3!)
                     }
                     subscriberToolBar3!.setItems(itemsSub3, animated: true)
-                    self.alertMsg = subscriberName3 + " entrou na sala"
+                    if (stream.videoType == .screen) {
+                        self.alertMsg = subscriberName3 + " está apresentando a tela"
+                    } else {
+                        self.alertMsg = subscriberName3 + " entrou na sala"
+                    }
                     self.showAlertAuto(self, dismissTime: 3)
                 }
             } else {
@@ -2235,6 +2277,12 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
                 }
                 //torna o subscriberview como maior
                 if (subViewPos2 == nil) { subViewPos2 = self.defineViewPos() }
+                
+                // cria o tap gesture
+                tapSub2View = UITapGestureRecognizer(target: self, action: #selector(toggleCamSub2))
+                subscriberView2!.isUserInteractionEnabled = true
+                subscriberView2!.addGestureRecognizer(tapSub2View!)
+                
                 //cria o subscriberview
                 view.addSubview(subscriberView2!)
                 resizeView(2, UIScreen.main.bounds.size)
@@ -2282,7 +2330,11 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
                     itemsSub2.append(buttonMicSub2!)
                 }
                 subscriberToolBar2!.setItems(itemsSub2, animated: true)
-                self.alertMsg = subscriberName2 + " entrou na sala"
+                if (stream.videoType == .screen) {
+                    self.alertMsg = subscriberName2 + " está apresentando a tela"
+                } else {
+                    self.alertMsg = subscriberName2 + " entrou na sala"
+                }
                 self.showAlertAuto(self, dismissTime: 3)
             }
         } else {
@@ -2303,10 +2355,12 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
             }
             //torna o subscriberview como maior
             if (subViewPos == nil) { subViewPos = self.defineViewPos() }
+            
             // cria o tap gesture
             tapSubView = UITapGestureRecognizer(target: self, action: #selector(toggleCamSub))
             subscriberView!.isUserInteractionEnabled = true
             subscriberView!.addGestureRecognizer(tapSubView!)
+            
             //cria o subscriberview
             view.addSubview(subscriberView!)
             resizeView(1, UIScreen.main.bounds.size)
@@ -2354,7 +2408,11 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
                 itemsSub.append(buttonMicSub!)
             }
             subscriberToolBar!.setItems(itemsSub, animated: true)
-            self.alertMsg = subscriberName + " entrou na sala"
+            if (stream.videoType == .screen) {
+                self.alertMsg = subscriberName + " está apresentando a tela"
+            } else {
+                self.alertMsg = subscriberName + " entrou na sala"
+            }
             self.showAlertAuto(self, dismissTime: 3)
         }
         if (waitingView != nil) {
@@ -2380,17 +2438,22 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
             subscriber = nil
             subscriberView = nil
             subscriberName = ""
-            if (subscriberRole == "MMD") {
-                let alertController = UIAlertController(title: alertTitle, message: alertMsg, preferredStyle: UIAlertController.Style.alert)
-                alertController.addAction(UIAlertAction(title: "Sair da Sala", style: UIAlertAction.Style.default, handler: { action in
-                    self.closeSala()
-                    self.closeView()
-                }))
-                alertController.addAction(UIAlertAction(title: "Aguardar", style: UIAlertAction.Style.default, handler: { action in
-                    alertController.dismiss(animated: true)
-                }))
-                present(alertController, animated: true, completion: nil)
+            if (stream.videoType == .camera) {
+                if (subscriberRole == "MMD") {
+                    let alertController = UIAlertController(title: alertTitle, message: alertMsg, preferredStyle: UIAlertController.Style.alert)
+                    alertController.addAction(UIAlertAction(title: "Sair da Sala", style: UIAlertAction.Style.default, handler: { action in
+                        self.closeSala()
+                        self.closeView()
+                    }))
+                    alertController.addAction(UIAlertAction(title: "Aguardar", style: UIAlertAction.Style.default, handler: { action in
+                        alertController.dismiss(animated: true)
+                    }))
+                    present(alertController, animated: true, completion: nil)
+                } else {
+                    self.showAlertAuto(self, dismissTime: 3)
+                }
             } else {
+                self.alertMsg = subscriberName + " parou de apresentar a tela"
                 self.showAlertAuto(self, dismissTime: 3)
             }
         }
@@ -2402,17 +2465,22 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
             subscriber2 = nil
             subscriberView2 = nil
             subscriberName2 = ""
-            if (subscriberRole2 == "MMD") {
-                let alertController = UIAlertController(title: alertTitle, message: alertMsg, preferredStyle: UIAlertController.Style.alert)
-                alertController.addAction(UIAlertAction(title: "Sair da Sala", style: UIAlertAction.Style.default, handler: { action in
-                    self.closeSala()
-                    self.closeView()
-                }))
-                alertController.addAction(UIAlertAction(title: "Aguardar", style: UIAlertAction.Style.default, handler: { action in
-                    alertController.dismiss(animated: true)
-                }))
-                present(alertController, animated: true, completion: nil)
+            if (stream.videoType == .camera) {
+                    if (subscriberRole2 == "MMD") {
+                    let alertController = UIAlertController(title: alertTitle, message: alertMsg, preferredStyle: UIAlertController.Style.alert)
+                    alertController.addAction(UIAlertAction(title: "Sair da Sala", style: UIAlertAction.Style.default, handler: { action in
+                        self.closeSala()
+                        self.closeView()
+                    }))
+                    alertController.addAction(UIAlertAction(title: "Aguardar", style: UIAlertAction.Style.default, handler: { action in
+                        alertController.dismiss(animated: true)
+                    }))
+                    present(alertController, animated: true, completion: nil)
+                } else {
+                    self.showAlertAuto(self, dismissTime: 3)
+                }
             } else {
+                self.alertMsg = subscriberName2 + " parou de apresentar a tela"
                 self.showAlertAuto(self, dismissTime: 3)
             }
         }
@@ -2424,17 +2492,22 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
             subscriber3 = nil
             subscriberView3 = nil
             subscriberName3 = ""
-            if (subscriberRole3 == "MMD") {
-                let alertController = UIAlertController(title: alertTitle, message: alertMsg, preferredStyle: UIAlertController.Style.alert)
-                alertController.addAction(UIAlertAction(title: "Sair da Sala", style: UIAlertAction.Style.default, handler: { action in
-                    self.closeSala()
-                    self.closeView()
-                }))
-                alertController.addAction(UIAlertAction(title: "Aguardar", style: UIAlertAction.Style.default, handler: { action in
-                    alertController.dismiss(animated: true)
-                }))
-                present(alertController, animated: true, completion: nil)
+            if (stream.videoType == .camera) {
+                if (subscriberRole3 == "MMD") {
+                    let alertController = UIAlertController(title: alertTitle, message: alertMsg, preferredStyle: UIAlertController.Style.alert)
+                    alertController.addAction(UIAlertAction(title: "Sair da Sala", style: UIAlertAction.Style.default, handler: { action in
+                        self.closeSala()
+                        self.closeView()
+                    }))
+                    alertController.addAction(UIAlertAction(title: "Aguardar", style: UIAlertAction.Style.default, handler: { action in
+                        alertController.dismiss(animated: true)
+                    }))
+                    present(alertController, animated: true, completion: nil)
+                } else {
+                    self.showAlertAuto(self, dismissTime: 3)
+                }
             } else {
+                self.alertMsg = subscriberName3 + " parou de apresentar a tela"
                 self.showAlertAuto(self, dismissTime: 3)
             }
         }

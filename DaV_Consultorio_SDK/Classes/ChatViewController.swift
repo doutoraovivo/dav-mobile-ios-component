@@ -69,7 +69,7 @@ public class ChatViewController: UIViewController{
         txfChatMsg?.placeholder = "Digite sua mensagem aqui"
         txfChatMsg?.borderStyle = UITextField.BorderStyle.roundedRect
         txfChatMsg?.contentVerticalAlignment = UIControl.ContentVerticalAlignment.center
-        txfChatMsg?.autocorrectionType = UITextAutocorrectionType.no
+        txfChatMsg?.autocorrectionType = .no
         txfChatMsg?.keyboardType = UIKeyboardType.default
         txfChatMsg?.returnKeyType = UIReturnKeyType.done
         txfChatMsg?.addTarget(nil, action:Selector(("firstResponderAction:")), for:.editingDidEndOnExit)

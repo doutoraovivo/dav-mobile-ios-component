@@ -50,7 +50,6 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
     var publisherId:String=""
     var sessionInit:String?
     var statusAppointment:String?
-    let screenBounds = UIScreen.main.bounds
     
     static var defaultBundle:Bundle?
     
@@ -273,9 +272,10 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
             self.closeView()
         }
     }
-    
+        
     override public func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
         super.viewWillTransition(to: size, with: coordinator)
+        
         resizeView(0, size)
         resizeView(1, size)
         resizeView(2, size)
@@ -1527,57 +1527,85 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
     }
     
     func defineView(_ screenSize: CGSize, _ viewPos: Int) -> CGRect {
+        let availableWidth:Int = Int(screenSize.width);
         let availableHeight:Int = Int(screenSize.height - tbButtons!.frame.height - self.bottomLayoutGuide.length - self.topLayoutGuide.length);
-        let paddingHeight:Int = Int(tbButtons!.frame.height / 2);
-        let maxViews:Int = 4;
+        let padding:Int = Int(tbButtons!.frame.height / 3);
+        let maxViews:Int = 3;
+        
+        let isPortrait:Bool = screenSize.width < screenSize.height;
         
         var posX:Int
         var posY:Int
         var viewWidth:Int
         var viewHeight:Int
+        
         if (viewPos == 0) {
             posY = Int(self.topLayoutGuide.length)
             posX = 0
-            viewWidth = Int(screenSize.width)
+//            viewWidth = Int(screenSize.width);
 //            viewHeight = Int(screenSize.height - tbButtons!.frame.height - self.bottomLayoutGuide.length) - posY!
+            viewWidth = availableWidth;
             viewHeight = availableHeight;
         } else {
-            if (Int(screenSize.width) < 220) {
-                viewWidth = Int(screenSize.width) - 20
-            } else {
-                viewWidth = Int((screenSize.width - 80) / 3)
-                if (viewWidth < 180) { viewWidth = 180 }
-            }
+//            if (Int(screenSize.width) < 220) {
+//                viewWidth = Int(screenSize.width) - 20
+//            } else {
+//                viewWidth = Int((screenSize.width - 80) / 3)
+//                if (viewWidth < 180) { viewWidth = 180 }
+//            }
 //            viewHeight = Int((viewWidth!) * 3 / 4)
 //            posY = Int(screenSize.height) - viewHeight! - 20 - Int(tbButtons!.frame.height) - Int(self.bottomLayoutGuide.length)
-            
-            viewHeight = (availableHeight / maxViews);
-            posY = (availableHeight - (viewHeight * viewPos));
-            viewHeight = viewHeight - paddingHeight;
-            
-            if (viewPos == 1) {
-                posX = Int(screenSize.width) - viewWidth - 20
-            } else if (viewPos == 2) {
-                if (Int(screenSize.width) >= 420) {
-                    posX = Int(screenSize.width) - ((viewWidth + 20) * 2)
-                } else {
-                    posX = Int(screenSize.width) - viewWidth - 20
-//                    posY = Int(screenSize.height) - ((viewHeight! - 20) * 2) - Int(tbButtons!.frame.height) - Int(self.bottomLayoutGuide.length)
-                }
-            } else if (viewPos == 3) {
-                if (Int(screenSize.width) >= 620) {
-                    posX = 20
-                } else if (Int(screenSize.width) >= 420) {
-                    posX = Int(screenSize.width) - viewWidth - 20
-//                    posY = Int(screenSize.height) - ((viewHeight! - 20) * 2) - Int(tbButtons!.frame.height) - Int(self.bottomLayoutGuide.length)
-                } else {
-                    posX = Int(screenSize.width) - viewWidth - 20
-//                    posY = Int(screenSize.height) - ((viewHeight! - 20) * 3) - Int(tbButtons!.frame.height) - Int(self.bottomLayoutGuide.length)
-                }
+
+            if (isPortrait) {
+                
+                print("viewPos \(viewPos)")
+
+                viewWidth = (availableWidth / 2);
+                viewWidth = viewWidth - padding;
+
+                viewHeight = (availableHeight / maxViews);
+                viewHeight = viewHeight - padding;
+                
+                posX = (availableWidth / 2)
+                posY = (availableHeight - (viewHeight * viewPos));
+
             } else {
-                posX = 0
+
+                viewWidth = (availableWidth / maxViews);
+                viewWidth = viewWidth - padding;
+
+                viewHeight = (availableHeight / 2);
+                viewHeight = viewHeight - padding;
+                
+                posX = (maxViews - viewPos) * viewWidth;
+                posY = (availableHeight / 2)
+
             }
+            
+//            if (viewPos == 1) {
+//                posX = Int(screenSize.width) - viewWidth - 20
+//            } else if (viewPos == 2) {
+//                if (Int(screenSize.width) >= 420) {
+//                    posX = Int(screenSize.width) - ((viewWidth + 20) * 2)
+//                } else {
+//                    posX = Int(screenSize.width) - viewWidth - 20
+////                    posY = Int(screenSize.height) - ((viewHeight! - 20) * 2) - Int(tbButtons!.frame.height) - Int(self.bottomLayoutGuide.length)
+//                }
+//            } else if (viewPos == 3) {
+//                if (Int(screenSize.width) >= 620) {
+//                    posX = 20
+//                } else if (Int(screenSize.width) >= 420) {
+//                    posX = Int(screenSize.width) - viewWidth - 20
+////                    posY = Int(screenSize.height) - ((viewHeight! - 20) * 2) - Int(tbButtons!.frame.height) - Int(self.bottomLayoutGuide.length)
+//                } else {
+//                    posX = Int(screenSize.width) - viewWidth - 20
+////                    posY = Int(screenSize.height) - ((viewHeight! - 20) * 3) - Int(tbButtons!.frame.height) - Int(self.bottomLayoutGuide.length)
+//                }
+//            } else {
+//                posX = 0
+//            }
         }
+        
         return CGRect(x: posX, y: posY, width: viewWidth, height: viewHeight)
     }
 
@@ -1633,6 +1661,10 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
     }
     
     func resizeView(_ callerView: Int, _ screenSize: CGSize) {
+        
+        print("UIScreen.main.bounds: \(UIScreen.main.bounds)")
+        print("sizecs: \(size)")
+
         if (callerView == 0) {
             if(publisher != nil) {
                 publisherView?.frame = defineView(screenSize, pubViewPos!)
@@ -1813,6 +1845,8 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
     }
     
     @objc func toggleCamPub(sender: UITapGestureRecognizer!) {
+        let screenBounds = UIScreen.main.bounds;
+        
         if (pubViewPos != nil) {
             if (pubViewPos != 0) {
                 if (subscriberView != nil) {
@@ -1840,6 +1874,8 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
     }
     
     @objc func toggleCamSub(sender: UITapGestureRecognizer!) {
+        let screenBounds = UIScreen.main.bounds;
+        
         if (subViewPos != nil) {
             if (subViewPos != 0) {
                 if (publisherView != nil) {
@@ -1865,8 +1901,10 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
             }
         }
     }
-    
+
     @objc func toggleCamSub2(sender: UITapGestureRecognizer!) {
+        let screenBounds = UIScreen.main.bounds;
+
         if (subViewPos2 != nil) {
             if (subViewPos2 != 0) {
                 if (publisherView != nil) {
@@ -1894,6 +1932,8 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
     }
     
     @objc func toggleCamSub3(sender: UITapGestureRecognizer!) {
+        let screenBounds = UIScreen.main.bounds;
+
         if (subViewPos3 != nil) {
             if (subViewPos3 != 0) {
                 if (publisherView != nil) {
@@ -2060,6 +2100,7 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
         print("The client connected to the OpenTok session.")
         
         let settings = OTPublisherSettings()
+        self.publisherName = self.publisherName.components(separatedBy: " ").first!
         settings.name = self.publisherName
         //print(session.connection?.data as Any)
         
@@ -2102,19 +2143,24 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
         addToolBarButtons()
         //toolbar da view
         publisherToolBar = UIToolbar()
+
         publisherToolBar!.barStyle = UIBarStyle.default
         publisherToolBar!.isTranslucent = true
-        publisherToolBar!.frame = CGRect(x: 0, y: 0, width: publisherView!.frame.width, height: 30)
+        publisherToolBar!.setBackgroundImage(onePixelImageWithColor(color: davBackgroundVideoHeaderParticipant!), forToolbarPosition: .any, barMetrics: UIBarMetrics.default)
+        publisherToolBar!.tintColor = davTextColorVideoHeaderParticipant
+
         publisherView?.addSubview(publisherToolBar!)
-        publisherToolBar!.translatesAutoresizingMaskIntoConstraints = true
+
+//        publisherToolBar!.frame = CGRect(x: 0, y: 0, width: publisherView!.frame.width, height: publisherToolBar!.frame.height)
+        publisherToolBar!.translatesAutoresizingMaskIntoConstraints = false
         publisherToolBar!.leadingAnchor.constraint(equalTo: publisherView!.leadingAnchor).isActive = true
         publisherToolBar!.trailingAnchor.constraint(equalTo: publisherView!.trailingAnchor).isActive = true
         publisherToolBar!.topAnchor.constraint(equalTo: publisherView!.topAnchor).isActive = true
         //Adiciona os itens da Toolbar
         itemsPub.append(UIBarButtonItem(title: publisherName, style: .plain, target: nil, action: nil))
+        
         publisherToolBar!.setItems(itemsPub, animated: true)
-        publisherToolBar!.tintColor = davTextColorVideoHeaderParticipant
-        publisherToolBar!.setBackgroundImage(onePixelImageWithColor(color: davBackgroundVideoHeaderParticipant!), forToolbarPosition: .any, barMetrics: UIBarMetrics.default)
+
         self.addMenuView()
         self.addChatView()
         if (publisherRole == "MMD") {
@@ -2158,6 +2204,8 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
     }
 
     public func session(_ session: OTSession, streamCreated stream: OTStream) {
+        let screenBounds = UIScreen.main.bounds;
+
         //stream data
         if let data = (stream.connection.data)!.data(using: .utf8) {
             do {
@@ -2207,9 +2255,9 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
                     if (subViewPos3 == nil) { subViewPos3 = self.defineViewPos() }
                     //cria o subscriberview
                     view.addSubview(subscriberView3!)
-                    resizeView(3, UIScreen.main.bounds.size)
+                    resizeView(3, screenBounds.size)
                     //pega o nome do Subscriber
-                    subscriberName3 = (subscriber3!.stream?.name)!
+                    subscriberName3 = ((subscriber3!.stream?.name)!.components(separatedBy: " ").first)!
                     //identifica o role
                     if (self.roomParticipants != nil) {
                         for participant in self.roomParticipants! {
@@ -2285,9 +2333,9 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
                 
                 //cria o subscriberview
                 view.addSubview(subscriberView2!)
-                resizeView(2, UIScreen.main.bounds.size)
+                resizeView(2, screenBounds.size)
                 //pega o nome do Subscriber
-                subscriberName2 = (subscriber2!.stream?.name)!
+                subscriberName2 = ((subscriber2!.stream?.name)!.components(separatedBy: " ").first)!
                 //identifica o role
                 if (self.roomParticipants != nil) {
                     for participant in self.roomParticipants! {
@@ -2363,9 +2411,9 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
             
             //cria o subscriberview
             view.addSubview(subscriberView!)
-            resizeView(1, UIScreen.main.bounds.size)
+            resizeView(1, screenBounds.size)
             //pega o nome do Subscriber
-            subscriberName = (subscriber!.stream?.name)!
+            subscriberName = ((subscriber!.stream?.name)!.components(separatedBy: " ").first)!
             //identifica o role
             if (self.roomParticipants != nil) {
                 for participant in self.roomParticipants! {
@@ -2543,7 +2591,7 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
     public func receiveChatSignal(chatMsgData: Data, connectionId: String) {
         do {
             if let chatMsgObj = try JSONSerialization.jsonObject(with: chatMsgData, options: []) as? [String:Any] {
-//                print("Resultado em JSON: \(chatMsgObj)")
+
                 let Dateformatter = DateFormatter()
                 Dateformatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
                 let cellDate:String=Dateformatter.string(from: Date())
@@ -2563,6 +2611,11 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
                 self.chatController!.addMessageToView(cellDate: cellDate, cellParticipant: cellParticipant, cellParticipantName: cellParticipantName, cellMessage: cellMessage)
                 self.chatController!.resizeScrollView()
                 self.chatController!.scrollToBottom(animated: true)
+                
+                if (chatView != nil && chatView!.isHidden) {
+                    self.alertMsg = "\(cellParticipantName) te enviou uma mensagem"
+                    self.showAlertAuto(self, dismissTime: 3)
+                }
             }
         } catch let error as NSError {
             print(error.localizedDescription)

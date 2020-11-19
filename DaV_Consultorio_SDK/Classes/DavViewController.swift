@@ -209,6 +209,8 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
     
     public override func viewDidAppear(_ animated: Bool) {
         print("bundle: \(DavViewController.getBundle)")
+        
+        UserDefaults.standard.set(false, forKey: "_UIConstraintBasedLayoutLogUnsatisfiable");
 
         SentrySDK.start { options in
             options.dsn = "https://6d7482976fa84c84b4193203f9fd1564@o412232.ingest.sentry.io/5294139"
@@ -284,7 +286,6 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
         resizeFileList(size)
         resizeNotes(size)
         resizeMenu(size)
-        
     }
     
     @objc func rotated() {
@@ -534,13 +535,14 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
         })
         task.resume()
     }
-    
+
     func connectToAnOpenTokSession() {
         print("connectToAnOpenTokSession")
         session = OTSession(apiKey: kApiKey, sessionId: kSessionId, delegate: self)
         var error: OTError?
         session?.connect(withToken: kToken, error: &error)
         if error != nil {
+            
             DispatchQueue.main.async {
                 print("Connecting to An OpenTok Session \(error!)")
                 self.removeSpinner()
@@ -1527,12 +1529,13 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
     }
     
     func defineView(_ screenSize: CGSize, _ viewPos: Int) -> CGRect {
+        let isPortrait:Bool = screenSize.width < screenSize.height;
+        
         let availableWidth:Int = Int(screenSize.width);
         let availableHeight:Int = Int(screenSize.height - tbButtons!.frame.height - self.bottomLayoutGuide.length - self.topLayoutGuide.length);
-        let padding:Int = Int(tbButtons!.frame.height / 3);
-        let maxViews:Int = 3;
-        
-        let isPortrait:Bool = screenSize.width < screenSize.height;
+        let padding:Int = Int(tbButtons!.frame.height / (isPortrait ? 4 : 6));
+        let proportion:Int = 2
+        let maxViews:Int = 4;
         
         var posX:Int
         var posY:Int
@@ -1542,31 +1545,20 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
         if (viewPos == 0) {
             posY = Int(self.topLayoutGuide.length)
             posX = 0
-//            viewWidth = Int(screenSize.width);
-//            viewHeight = Int(screenSize.height - tbButtons!.frame.height - self.bottomLayoutGuide.length) - posY!
             viewWidth = availableWidth;
             viewHeight = availableHeight;
         } else {
-//            if (Int(screenSize.width) < 220) {
-//                viewWidth = Int(screenSize.width) - 20
-//            } else {
-//                viewWidth = Int((screenSize.width - 80) / 3)
-//                if (viewWidth < 180) { viewWidth = 180 }
-//            }
-//            viewHeight = Int((viewWidth!) * 3 / 4)
-//            posY = Int(screenSize.height) - viewHeight! - 20 - Int(tbButtons!.frame.height) - Int(self.bottomLayoutGuide.length)
-
             if (isPortrait) {
                 
                 print("viewPos \(viewPos)")
 
-                viewWidth = (availableWidth / 2);
+                viewWidth = (availableWidth / proportion);
                 viewWidth = viewWidth - padding;
 
                 viewHeight = (availableHeight / maxViews);
                 viewHeight = viewHeight - padding;
                 
-                posX = (availableWidth / 2)
+                posX = (availableWidth / proportion)
                 posY = (availableHeight - (viewHeight * viewPos));
 
             } else {
@@ -1574,36 +1566,13 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
                 viewWidth = (availableWidth / maxViews);
                 viewWidth = viewWidth - padding;
 
-                viewHeight = (availableHeight / 2);
+                viewHeight = (availableHeight / proportion);
                 viewHeight = viewHeight - padding;
                 
                 posX = (maxViews - viewPos) * viewWidth;
-                posY = (availableHeight / 2)
+                posY = (availableHeight / proportion)
 
             }
-            
-//            if (viewPos == 1) {
-//                posX = Int(screenSize.width) - viewWidth - 20
-//            } else if (viewPos == 2) {
-//                if (Int(screenSize.width) >= 420) {
-//                    posX = Int(screenSize.width) - ((viewWidth + 20) * 2)
-//                } else {
-//                    posX = Int(screenSize.width) - viewWidth - 20
-////                    posY = Int(screenSize.height) - ((viewHeight! - 20) * 2) - Int(tbButtons!.frame.height) - Int(self.bottomLayoutGuide.length)
-//                }
-//            } else if (viewPos == 3) {
-//                if (Int(screenSize.width) >= 620) {
-//                    posX = 20
-//                } else if (Int(screenSize.width) >= 420) {
-//                    posX = Int(screenSize.width) - viewWidth - 20
-////                    posY = Int(screenSize.height) - ((viewHeight! - 20) * 2) - Int(tbButtons!.frame.height) - Int(self.bottomLayoutGuide.length)
-//                } else {
-//                    posX = Int(screenSize.width) - viewWidth - 20
-////                    posY = Int(screenSize.height) - ((viewHeight! - 20) * 3) - Int(tbButtons!.frame.height) - Int(self.bottomLayoutGuide.length)
-//                }
-//            } else {
-//                posX = 0
-//            }
         }
         
         return CGRect(x: posX, y: posY, width: viewWidth, height: viewHeight)
@@ -2202,9 +2171,14 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
         print("The client failed to connect to the OpenTok session: \(error).")
         self.connectionError()
     }
-
+    
     public func session(_ session: OTSession, streamCreated stream: OTStream) {
         let screenBounds = UIScreen.main.bounds;
+        var actual = 0;
+        print("SessionId: \(stream.session.sessionId)")
+        print("ConnectionId: \(stream.connection.connectionId)")
+        print("StreamId: \(stream.streamId)")
+        print("Stream Name: \(stream.name)")
 
         //stream data
         if let data = (stream.connection.data)!.data(using: .utf8) {
@@ -2237,6 +2211,7 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
                     return
                 } else {
                     print("A stream (3) was created in the session.")
+                    actual = 3;
                     subscriber3 = OTSubscriber(stream: stream, delegate: self)
                     guard (subscriber3 != nil) else {
                         return
@@ -2255,7 +2230,7 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
                     if (subViewPos3 == nil) { subViewPos3 = self.defineViewPos() }
                     //cria o subscriberview
                     view.addSubview(subscriberView3!)
-                    resizeView(3, screenBounds.size)
+                    resizeView(actual, screenBounds.size)
                     //pega o nome do Subscriber
                     subscriberName3 = ((subscriber3!.stream?.name)!.components(separatedBy: " ").first)!
                     //identifica o role
@@ -2302,6 +2277,7 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
                     subscriberToolBar3!.setItems(itemsSub3, animated: true)
                     if (stream.videoType == .screen) {
                         self.alertMsg = subscriberName3 + " está apresentando a tela"
+                        toggleCamSub3(sender: nil);
                     } else {
                         self.alertMsg = subscriberName3 + " entrou na sala"
                     }
@@ -2309,6 +2285,7 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
                 }
             } else {
                 print("A stream (2) was created in the session.")
+                actual = 2;
                 subscriber2 = OTSubscriber(stream: stream, delegate: self)
                 guard (subscriber2 != nil) else {
                     return
@@ -2333,7 +2310,7 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
                 
                 //cria o subscriberview
                 view.addSubview(subscriberView2!)
-                resizeView(2, screenBounds.size)
+                resizeView(actual, screenBounds.size)
                 //pega o nome do Subscriber
                 subscriberName2 = ((subscriber2!.stream?.name)!.components(separatedBy: " ").first)!
                 //identifica o role
@@ -2380,12 +2357,14 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
                 subscriberToolBar2!.setItems(itemsSub2, animated: true)
                 if (stream.videoType == .screen) {
                     self.alertMsg = subscriberName2 + " está apresentando a tela"
+                    toggleCamSub2(sender: nil);
                 } else {
                     self.alertMsg = subscriberName2 + " entrou na sala"
                 }
                 self.showAlertAuto(self, dismissTime: 3)
             }
         } else {
+            actual = 1;
             print("A stream (1) was created in the session.")
             subscriber = OTSubscriber(stream: stream, delegate: self)
             guard (subscriber != nil) else {
@@ -2411,7 +2390,7 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
             
             //cria o subscriberview
             view.addSubview(subscriberView!)
-            resizeView(1, screenBounds.size)
+            resizeView(actual, screenBounds.size)
             //pega o nome do Subscriber
             subscriberName = ((subscriber!.stream?.name)!.components(separatedBy: " ").first)!
             //identifica o role
@@ -2458,6 +2437,7 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
             subscriberToolBar!.setItems(itemsSub, animated: true)
             if (stream.videoType == .screen) {
                 self.alertMsg = subscriberName + " está apresentando a tela"
+                toggleCamSub(sender: nil);
             } else {
                 self.alertMsg = subscriberName + " entrou na sala"
             }
@@ -2474,18 +2454,47 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
     
     public func session(_ session: OTSession, streamDestroyed stream: OTStream) {
         print("A stream was destroyed in the session.")
+        print("SessionId: \(stream.session.sessionId)")
+        print("ConnectionId: \(stream.connection.connectionId)")
+        print("StreamId: \(stream.streamId)")
+        print("Stream Name: \(stream.name)")
+
+        var participantName:String;
+        
         var alertTitle:String="Doutor Ao Vivo"
         if (publisherName.count > 0) {
             alertTitle = publisherName
         }
+
+        /// Caso seja a mesma conexão, alterna para o último
+        if (stream.connection.connectionId == subscriber?.stream?.connection.connectionId) {
+            toggleCamSub(sender: nil);
+        }
+
+        if (stream.connection.connectionId == subscriber2?.stream?.connection.connectionId) {
+            toggleCamSub2(sender: nil);
+        }
+        if (stream.connection.connectionId == subscriber3?.stream?.connection.connectionId) {
+            toggleCamSub3(sender: nil);
+        }
+        
+        /// Correção Temporária quando uma view deixa um espaço entre views
+        if (pubViewPos! > 1) {
+            toggleCamPub(sender: nil)
+            toggleCamSub(sender: nil)
+        } else {
+            toggleCamSub(sender: nil)
+        }
+
         if (subscriber?.session == nil && subscriberView != nil) {
-            alertMsg = subscriberName + " saiu da sala"
             subscriberView?.removeFromSuperview()
+            participantName = subscriberName
             itemsSub.removeAll()
             subViewPos = nil
             subscriber = nil
             subscriberView = nil
             subscriberName = ""
+            
             if (stream.videoType == .camera) {
                 if (subscriberRole == "MMD") {
                     let alertController = UIAlertController(title: alertTitle, message: alertMsg, preferredStyle: UIAlertController.Style.alert)
@@ -2497,24 +2506,23 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
                         alertController.dismiss(animated: true)
                     }))
                     present(alertController, animated: true, completion: nil)
-                } else {
-                    self.showAlertAuto(self, dismissTime: 3)
                 }
+                self.alertMsg = participantName + " saiu da sala"
             } else {
-                self.alertMsg = subscriberName + " parou de apresentar a tela"
-                self.showAlertAuto(self, dismissTime: 3)
+                self.alertMsg = participantName + " parou de apresentar a tela"
             }
+            self.showAlertAuto(self, dismissTime: 3)
         }
         if (subscriber2?.session == nil && subscriberView2 != nil) {
-            alertMsg = subscriberName2 + " saiu da sala"
             subscriberView2?.removeFromSuperview()
+            participantName = subscriberName2
             itemsSub2.removeAll()
             subViewPos2 = nil
             subscriber2 = nil
             subscriberView2 = nil
             subscriberName2 = ""
             if (stream.videoType == .camera) {
-                    if (subscriberRole2 == "MMD") {
+                if (subscriberRole2 == "MMD") {
                     let alertController = UIAlertController(title: alertTitle, message: alertMsg, preferredStyle: UIAlertController.Style.alert)
                     alertController.addAction(UIAlertAction(title: "Sair da Sala", style: UIAlertAction.Style.default, handler: { action in
                         self.closeSala()
@@ -2524,17 +2532,17 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
                         alertController.dismiss(animated: true)
                     }))
                     present(alertController, animated: true, completion: nil)
-                } else {
-                    self.showAlertAuto(self, dismissTime: 3)
                 }
+                self.alertMsg = participantName + " saiu da sala"
             } else {
-                self.alertMsg = subscriberName2 + " parou de apresentar a tela"
-                self.showAlertAuto(self, dismissTime: 3)
+                self.alertMsg = participantName + " parou de apresentar a tela"
             }
+            self.showAlertAuto(self, dismissTime: 3)
         }
         if (subscriber3?.session == nil && subscriberView3 != nil) {
             alertMsg = subscriberName3 + " saiu da sala"
             subscriberView3?.removeFromSuperview()
+            participantName = subscriberName3
             itemsSub3.removeAll()
             subViewPos3 = nil
             subscriber3 = nil
@@ -2551,12 +2559,10 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
                         alertController.dismiss(animated: true)
                     }))
                     present(alertController, animated: true, completion: nil)
-                } else {
-                    self.showAlertAuto(self, dismissTime: 3)
                 }
+                self.alertMsg = participantName + " saiu da sala"
             } else {
-                self.alertMsg = subscriberName3 + " parou de apresentar a tela"
-                self.showAlertAuto(self, dismissTime: 3)
+                self.alertMsg = participantName + " parou de apresentar a tela"
             }
         }
     }
@@ -2677,17 +2683,6 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
         
     public func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
     }
-    
-    /*
-    // MARK: - Navigation
-
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        // Get the new view controller using segue.destination.
-        // Pass the selected object to the new view controller.
-    }
-    */
-
 }
 
 

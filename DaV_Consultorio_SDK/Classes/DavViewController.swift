@@ -806,7 +806,7 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
     
     func selectFileToSend() {
         
-        let importMenu = UIDocumentPickerViewController(documentTypes: ["public.content"], in: .import)
+        let importMenu = UIDocumentPickerViewController(documentTypes: ["public.content","public.image"], in: .import)
         
         importMenu.delegate = self
         importMenu.modalPresentationStyle = .overCurrentContext
@@ -950,14 +950,19 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
         }
         task.resume()
     }
-    
+
+    let preview = UIViewController();
+
     public func documentInteractionControllerViewControllerForPreview(_ controller: UIDocumentInteractionController) -> UIViewController {
-         if let navigationController = self.navigationController {
-             return navigationController
-         } else {
-             return self
-         }
+        preview.modalPresentationStyle = .overCurrentContext;
+        self.view.addSubview(preview.view);
+        return preview;
      }
+    
+    public func documentInteractionControllerDidEndPreview(_ controller: UIDocumentInteractionController) {
+        preview.dismiss(animated: true, completion: nil)
+        preview.view.removeFromSuperview();
+    }
     
     func showDownloadedFile(destinationFileUrl: URL) {
         let dc = UIDocumentInteractionController(url: destinationFileUrl)
@@ -1550,8 +1555,6 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
         } else {
             if (isPortrait) {
                 
-                print("viewPos \(viewPos)")
-
                 viewWidth = (availableWidth / proportion);
                 viewWidth = viewWidth - padding;
 
@@ -1631,9 +1634,6 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
     
     func resizeView(_ callerView: Int, _ screenSize: CGSize) {
         
-        print("UIScreen.main.bounds: \(UIScreen.main.bounds)")
-        print("sizecs: \(size)")
-
         if (callerView == 0) {
             if(publisher != nil) {
                 publisherView?.frame = defineView(screenSize, pubViewPos!)
@@ -2175,10 +2175,6 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
     public func session(_ session: OTSession, streamCreated stream: OTStream) {
         let screenBounds = UIScreen.main.bounds;
         var actual = 0;
-        print("SessionId: \(stream.session.sessionId)")
-        print("ConnectionId: \(stream.connection.connectionId)")
-        print("StreamId: \(stream.streamId)")
-        print("Stream Name: \(stream.name)")
 
         //stream data
         if let data = (stream.connection.data)!.data(using: .utf8) {
@@ -2453,12 +2449,6 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
     }
     
     public func session(_ session: OTSession, streamDestroyed stream: OTStream) {
-        print("A stream was destroyed in the session.")
-        print("SessionId: \(stream.session.sessionId)")
-        print("ConnectionId: \(stream.connection.connectionId)")
-        print("StreamId: \(stream.streamId)")
-        print("Stream Name: \(stream.name)")
-
         var participantName:String;
         
         var alertTitle:String="Doutor Ao Vivo"

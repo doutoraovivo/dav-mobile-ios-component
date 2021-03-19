@@ -1,11 +1,11 @@
 PODS:
-  - DaV_Consultorio_SDK (1.0.7):
-    - OpenTok (~> 2.18)
+  - DaV_Consultorio_SDK (1.0.10):
+    - OpenTok (~> 2.19)
     - Sentry (~> 6)
-  - OpenTok (2.18.1)
-  - Sentry (6.0.6):
-    - Sentry/Core (= 6.0.6)
-  - Sentry/Core (6.0.6)
+  - OpenTok (2.19.0)
+  - Sentry (6.2.1):
+    - Sentry/Core (= 6.2.1)
+  - Sentry/Core (6.2.1)
 
 DEPENDENCIES:
   - DaV_Consultorio_SDK (from `../`)
@@ -20,9 +20,9 @@ EXTERNAL SOURCES:
     :path: "../"
 
 SPEC CHECKSUMS:
-  DaV_Consultorio_SDK: cc5d130200bd230e69c93da02ead0fb9b7ed2e51
-  OpenTok: 2a816f5d77fbf2e2ebb5aec841bd21fb7dc7737b
-  Sentry: 35a49e933ce32992023cd0e810042079e4792682
+  DaV_Consultorio_SDK: 15fd7d958fbc29c02cb1fdb3ef82abb8c1801592
+  OpenTok: 3ac356cce06545a573234582702abaf671d44909
+  Sentry: 9b922b396b0e0bca8516a10e36b0ea3ebea5faf7
 
 PODFILE CHECKSUM: e649f6a1f68986a2e68f4cb83a1d6d5764a778a5
 

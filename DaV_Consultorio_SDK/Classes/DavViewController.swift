@@ -12,6 +12,7 @@ import Sentry
 
 // Replace with your OpenTok API key
 var kApiKey:String = ""
+var DAV_SDK_VERSION = "1.0.10"
 
 //Mensagem
 public struct ChatMessage {
@@ -86,6 +87,18 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
     let urlRecordStop:String = "/appointment/record/stop?id="
     let urlAcomplish:String = "/appointment/accomplish?id="
     
+    enum DavEnv {
+        case DEV;
+        case HOM;
+        case PRD;
+    }
+    
+    let sentryKeys: [DavEnv: String] = [
+        DavEnv.DEV: "https://89b2956b13d34fd899683eb78e8ffe26@o412232.ingest.sentry.io/5294139",
+        DavEnv.HOM: "https://86dd09bf108849deb290f741822592a1@o412232.ingest.sentry.io/5294139",
+        DavEnv.PRD: "https://87adb0b75e8b407cad3a0be8567181e2@o412232.ingest.sentry.io/5294139",
+    ];
+        
     //criação da session
     var session: OTSession?
     var publisher: OTPublisher?
@@ -207,18 +220,38 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
         return DavViewController.defaultBundle!
     }
     
+    
+    private func getEnv() -> DavEnv {
+        let url = self.DAV_URL_ACCESS
+        if (url.contains(".dev.")) {
+            return DavEnv.DEV
+        } else if (url.contains(".hom.")) {
+            return DavEnv.HOM
+        } else {
+            return DavEnv.PRD
+        }
+    }
+    
     public override func viewDidAppear(_ animated: Bool) {
         print("bundle: \(DavViewController.getBundle)")
         
         UserDefaults.standard.set(false, forKey: "_UIConstraintBasedLayoutLogUnsatisfiable");
 
         SentrySDK.start { options in
-            options.dsn = "https://6d7482976fa84c84b4193203f9fd1564@o412232.ingest.sentry.io/5294139"
+            options.dsn = self.sentryKeys[self.getEnv()]
             options.debug = true // Enabled debug when first installing is always helpful
             options.environment = Bundle.main.bundleIdentifier
             options.enableAutoSessionTracking = true
         }
 
+        let versionCrumb = Breadcrumb()
+        versionCrumb.level = SentryLevel.info
+        versionCrumb.category = "version"
+        versionCrumb.message = "DaV SDK Version: \(DAV_SDK_VERSION)"
+        
+        SentrySDK.addBreadcrumb(crumb: versionCrumb)
+
+        
         let crumb = Breadcrumb()
         crumb.level = SentryLevel.info
         crumb.category = "url"
@@ -475,6 +508,20 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
                     if (json["participants"] != nil && json["session"] != nil) {
                         self.roomParticipants = json["participants"] as? Array<Any>
                         self.kSessionId = json["session"] as! String
+
+                        let crumb = Breadcrumb()
+                        crumb.level = SentryLevel.info
+                        crumb.type = "opentok"
+                        crumb.category = "token"
+                        
+                        if let apiDav = json["api_dav"]  {
+                            kApiKey = apiDav as! String
+                            crumb.message = "REST -> key: \(kApiKey), session: \(self.kSessionId)"
+                        } else {
+                            crumb.message = "Fall -> key: \(kApiKey), session: \(self.kSessionId)"
+                        }
+                        SentrySDK.addBreadcrumb(crumb: crumb)
+
                         self.statusAppointment = json["status_appointment"] as? String
                         self.sessionInit = json["date_start_attendance"] as? String
                         for participant in self.roomParticipants! {
@@ -541,8 +588,7 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
         session = OTSession(apiKey: kApiKey, sessionId: kSessionId, delegate: self)
         var error: OTError?
         session?.connect(withToken: kToken, error: &error)
-        if error != nil {
-            
+        if error !== nil {
             DispatchQueue.main.async {
                 print("Connecting to An OpenTok Session \(error!)")
                 self.removeSpinner()

@@ -8,7 +8,7 @@
 
 Pod::Spec.new do |s|
   s.name             = 'DaV_Consultorio_SDK'
-  s.version          = '1.0.9'
+  s.version          = '1.0.10'
   s.summary          = 'Doutor ao Vivo - Consultorio Nativo'
 
   s.description      = <<-DESC
@@ -31,7 +31,7 @@ Pod::Spec.new do |s|
 
   s.frameworks = 'UIKit'
   s.static_framework = true
-  s.dependency 'OpenTok', '~> 2.18'
+  s.dependency 'OpenTok', '~> 2.19'
   s.dependency 'Sentry', '~> 6'
   
   s.pod_target_xcconfig = {

@@ -12,7 +12,7 @@ import Sentry
 
 // Replace with your OpenTok API key
 var kApiKey:String = ""
-var DAV_SDK_VERSION = "1.0.10"
+var DAV_SDK_VERSION = "1.0.11"
 
 //Mensagem
 public struct ChatMessage {
@@ -69,24 +69,27 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
     
     //domínios e API keys
     var domain:String = ""
+
     let domainDev:String = "https://mobile.dev.doutoraovivo.com.br"
     let domainHom:String = "https://mobile.hom.doutoraovivo.com.br"
     let domainProd:String = "https://mobile.doutoraovivo.com.br"
+
     var domainMedia:String = ""
     let domainMediaDev:String = "https://media.dev.doutoraovivo.com.br"
     let domainMediaHom:String = "https://media.hom.doutoraovivo.com.br"
     let domainMediaProd:String = "https://media.doutoraovivo.com.br"
-    let apiKeyDev:String = "46302052"
-    let apiKeyHom:String = "46495482"
-    let apiKeyProd:String = "46401552"
+
+    let urlAcomplish:String = "/appointment/accomplish?id="
+
     let urlSendFile:String = "/appointment/file?id="
     let urlDeleteFile:String = "/appointment/file?id="
-    let urlSaveNote:String = "/appointment/notes?id="
+
     let urlSaveMessage:String = "/appointment/message?id="
+    let urlSaveNote:String = "/appointment/notes?id="
+
     let urlRecordStart:String = "/appointment/record/start?id="
     let urlRecordStop:String = "/appointment/record/stop?id="
-    let urlAcomplish:String = "/appointment/accomplish?id="
-    
+
     enum DavEnv {
         case DEV;
         case HOM;
@@ -239,10 +242,25 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
 
         SentrySDK.start { options in
             options.dsn = self.sentryKeys[self.getEnv()]
-            options.debug = true // Enabled debug when first installing is always helpful
             options.environment = Bundle.main.bundleIdentifier
             options.enableAutoSessionTracking = true
+            
+            options.sampleRate = 1
+
+            options.add(inAppInclude: "OpenTok")
+            options.add(inAppInclude: "Sentry")
+            options.add(inAppInclude: "DaV_Consultorio_SDK")
+            
+            options.add(inAppExclude: "")
+            
+            options.beforeSend = { event in
+                dump(event)
+                
+                return event
+            }
         }
+        
+        SentrySDK.setUser(Sentry.User(userId: self.DAV_URL_ACCESS.components(separatedBy: "/").last!))
 
         let versionCrumb = Breadcrumb()
         versionCrumb.level = SentryLevel.info
@@ -250,7 +268,6 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
         versionCrumb.message = "DaV SDK Version: \(DAV_SDK_VERSION)"
         
         SentrySDK.addBreadcrumb(crumb: versionCrumb)
-
         
         let crumb = Breadcrumb()
         crumb.level = SentryLevel.info
@@ -286,15 +303,12 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
         if DAV_URL_ACCESS.contains(".dev.") {
             domain = domainDev
             domainMedia = domainMediaDev
-            kApiKey = apiKeyDev
         } else if DAV_URL_ACCESS.contains(".hom.") {
             domain = domainHom
             domainMedia = domainMediaHom
-            kApiKey = apiKeyHom
         } else {
             domain = domainProd
             domainMedia = domainMediaProd
-            kApiKey = apiKeyProd
         }
         self.iniciaSala()
     }
@@ -305,6 +319,9 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
         super.viewWillDisappear(animated)
         if self.isMovingFromParentViewController {
             self.closeView()
+            SentrySDK.start { options in
+                options.enabled = false
+            }
         }
     }
         
@@ -355,7 +372,7 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
         if (publisherName.count > 0) {
             alertTitle = publisherName
         }
-        let alertController = UIAlertController(title: alertTitle, message: alertMsg, preferredStyle: UIAlertController.Style.alert)
+        let alertController = UIAlertController(title: alertTitle, message: self.alertMsg, preferredStyle: UIAlertController.Style.alert)
         alertController.addAction(UIAlertAction(title: "OK", style: UIAlertAction.Style.default, handler: nil))
         present(alertController, animated: true, completion: nil)
     }
@@ -365,7 +382,7 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
         if (publisherName.count > 0) {
             alertTitle = publisherName
         }
-        let alertController = UIAlertController(title: alertTitle, message: alertMsg, preferredStyle: UIAlertController.Style.alert)
+        let alertController = UIAlertController(title: alertTitle, message: self.alertMsg, preferredStyle: UIAlertController.Style.alert)
         alertController.addAction(UIAlertAction(title: "OK", style: UIAlertAction.Style.default, handler: { action in self.closeView() }))
         present(alertController, animated: true, completion: nil)
     }
@@ -379,7 +396,7 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
         if (dismissTime == 0) {
             secondsToDismiss = 3
         }
-        let alertController = UIAlertController(title: alertTitle, message: alertMsg, preferredStyle: UIAlertController.Style.alert)
+        let alertController = UIAlertController(title: alertTitle, message: self.alertMsg, preferredStyle: UIAlertController.Style.alert)
         present(alertController, animated: true, completion: nil)
         // change to desired number of seconds (in this case 5 seconds)
         let when = DispatchTime.now() + DispatchTimeInterval.seconds(secondsToDismiss)
@@ -418,15 +435,15 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
                 if (accessRoomKey.count > 0) {
                     self.accessRoom()
                 } else {
-                    alertMsg = "URL inválida"
+                    self.alertMsg = "URL inválida"
                     showAlertClose(self)
                 }
             } else {
-                alertMsg = "Informe o endereço do Access Room"
+                self.alertMsg = "Informe o endereço do Access Room"
                 showAlertClose(self)
             }
         } else {
-            alertMsg = "Informe a API Key"
+            self.alertMsg = "Informe a API Key"
             showAlertClose(self)
         }
     }
@@ -438,7 +455,11 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
         var request = URLRequest(url: URL(string: domain + "/appointment/accessroom?access=" + accessRoomKey)!)
         request.httpMethod = "GET"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        let session = URLSession.shared
+        let configuration = URLSessionConfiguration.default
+        if #available(iOS 11, *) {
+            configuration.waitsForConnectivity = true
+        }
+        let session = URLSession(configuration: configuration)
         let task = session.dataTask(with: request, completionHandler: { data, response, error in
             guard let data = data, error == nil else
             {
@@ -492,7 +513,11 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         request.addValue(authRoomParticipant, forHTTPHeaderField: "x-auth-room-participant")
         request.addValue(X_API_ID, forHTTPHeaderField: "x-api-id")
-        let session = URLSession.shared
+        let configuration = URLSessionConfiguration.default
+        if #available(iOS 11, *) {
+            configuration.waitsForConnectivity = true
+        }
+        let session = URLSession(configuration: configuration)
         let task = session.dataTask(with: request, completionHandler: { data, response, error in
             guard let data = data, error == nil else {
                 self.removeSpinner()
@@ -674,42 +699,17 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
     }
     
     func closeSala() {
-//        var error: OTError? // TODO Passando o trator
         if (publisher != nil) {
             closePublisher(_pubView: &publisherView, _pub: &publisher)
-//            session!.unpublish(publisher!, error: &error)
-//            publisherView?.removeFromSuperview()
-//            publisherView = nil
-//            publisher = nil
-//            publisher?.publishVideo = false
-//            publisher?.publishAudio = false
         }
         if (subscriber != nil) {
             closeSubscriber(_subView: &subscriberView, _sub: &subscriber)
-//            session!.unsubscribe(subscriber!, error: &error)
-//            subscriberView?.removeFromSuperview()
-//            subscriberView = nil
-//            subscriber = nil
-//            subscriber?.subscribeToVideo = false
-//            subscriber?.subscribeToAudio = false
         }
         if (subscriber2 != nil) {
             closeSubscriber(_subView: &subscriberView2, _sub: &subscriber2)
-//            session!.unsubscribe(subscriber2!, error: &error)
-//            subscriberView2?.removeFromSuperview()
-//            subscriberView2 = nil
-//            subscriber2 = nil
-//            subscriber2?.subscribeToVideo = false
-//            subscriber2?.subscribeToAudio = false
         }
         if (subscriber3 != nil) {
             closeSubscriber(_subView: &subscriberView3, _sub: &subscriber3)
-//            session!.unsubscribe(subscriber3!, error: &error)
-//            subscriberView3?.removeFromSuperview()
-//            subscriberView3 = nil
-//            subscriber3 = nil
-//            subscriber3?.subscribeToVideo = false
-//            subscriber3?.subscribeToAudio = false
         }
     }
     
@@ -730,7 +730,11 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         request.addValue(authRoomParticipant, forHTTPHeaderField: "x-auth-room-participant")
         request.addValue(X_API_ID, forHTTPHeaderField: "x-api-id")
-        let session = URLSession.shared
+        let configuration = URLSessionConfiguration.default
+        if #available(iOS 11, *) {
+            configuration.waitsForConnectivity = true
+        }
+        let session = URLSession(configuration: configuration)
         let task = session.dataTask(with: request, completionHandler: { data, response, error in
             guard let data = data, error == nil else {
                 self.removeSpinner()
@@ -757,7 +761,11 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         request.addValue(authRoomParticipant, forHTTPHeaderField: "x-auth-room-participant")
         request.addValue(X_API_ID, forHTTPHeaderField: "x-api-id")
-        let session = URLSession.shared
+        let configuration = URLSessionConfiguration.default
+        if #available(iOS 11, *) {
+            configuration.waitsForConnectivity = true
+        }
+        let session = URLSession(configuration: configuration)
         let task = session.dataTask(with: request, completionHandler: { data, response, error in
             guard let data = data, error == nil else { return }
             DispatchQueue.main.async {
@@ -778,26 +786,24 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
     }
     
     @objc func updateTimer() {
-        let Dateformatter = DateFormatter()
-        Dateformatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
-        var dateInit = Date()
-        if (sessionInit != nil ) {
-            dateInit = Dateformatter.date(from: sessionInit!)!
-            //dateInit = dateInit.addingTimeInterval(-3600)
-        } else {
-            //print("data de início não registrada ainda.")
+        if (self.sessionInit == nil ) {
             return
         }
-        let calendar = Calendar.current
-        let dateDiff = calendar.dateComponents([Calendar.Component.second], from: dateInit, to: Date())
-        let diffTotal = dateDiff.second!
-        let hours = Int(diffTotal) / 3600
-        let minutes = Int(diffTotal) / 60 % 60
-        let seconds = Int(diffTotal) % 60
-        if (hours > 0) {
-            timerLabel?.title = String(format:"%02i:%02i:%02i", hours, minutes, seconds)
-        } else {
-            timerLabel?.title = String(format:"%02i:%02i", minutes, seconds)
+        let Dateformatter = DateFormatter()
+        Dateformatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+        
+        if let dateInit = Dateformatter.date(from: self.sessionInit!) {
+            let calendar = Calendar.current
+            let dateDiff = calendar.dateComponents([Calendar.Component.second], from: dateInit, to: Date())
+            let diffTotal = dateDiff.second!
+            let hours = Int(diffTotal) / 3600
+            let minutes = Int(diffTotal) / 60 % 60
+            let seconds = Int(diffTotal) % 60
+            if (hours > 0) {
+                timerLabel?.title = String(format:"%02i:%02i:%02i", hours, minutes, seconds)
+            } else {
+                timerLabel?.title = String(format:"%02i:%02i", minutes, seconds)
+            }
         }
     }
     
@@ -835,7 +841,11 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         request.addValue(authRoomParticipant, forHTTPHeaderField: "x-auth-room-participant")
         request.addValue(X_API_ID, forHTTPHeaderField: "x-api-id")
-        let session = URLSession.shared
+        let configuration = URLSessionConfiguration.default
+        if #available(iOS 11, *) {
+            configuration.waitsForConnectivity = true
+        }
+        let session = URLSession(configuration: configuration)
         let task = session.dataTask(with: request, completionHandler: { data, response, error in
             guard let data = data, error == nil else { return }
             DispatchQueue.main.async {
@@ -873,7 +883,11 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         request.addValue(authRoomParticipant, forHTTPHeaderField: "x-auth-room-participant")
         request.addValue(X_API_ID, forHTTPHeaderField: "x-api-id")
-        let session = URLSession.shared
+        let configuration = URLSessionConfiguration.default
+        if #available(iOS 11, *) {
+            configuration.waitsForConnectivity = true
+        }
+        let session = URLSession(configuration: configuration)
         let task = session.dataTask(with: request, completionHandler: { data, response, error in
             guard let data = data, error == nil else {
                 self.removeSpinner()
@@ -1029,7 +1043,11 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         request.addValue(authRoomParticipant, forHTTPHeaderField: "x-auth-room-participant")
         request.addValue(X_API_ID, forHTTPHeaderField: "x-api-id")
-        let session = URLSession.shared
+        let configuration = URLSessionConfiguration.default
+        if #available(iOS 11, *) {
+            configuration.waitsForConnectivity = true
+        }
+        let session = URLSession(configuration: configuration)
         let task = session.dataTask(with: request, completionHandler: { data, response, error in
             guard let data = data, error == nil else {
                 self.removeSpinner()
@@ -1067,7 +1085,11 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         request.addValue(authRoomParticipant, forHTTPHeaderField: "x-auth-room-participant")
         request.addValue(X_API_ID, forHTTPHeaderField: "x-api-id")
-        let session = URLSession.shared
+        let configuration = URLSessionConfiguration.default
+        if #available(iOS 11, *) {
+            configuration.waitsForConnectivity = true
+        }
+        let session = URLSession(configuration: configuration)
         let task = session.dataTask(with: request, completionHandler: { data, response, error in
             guard let data = data, error == nil else {
                 self.removeSpinner()
@@ -1119,7 +1141,11 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
                 request.addValue("application/json", forHTTPHeaderField: "Content-Type")
                 request.addValue(authRoomParticipant, forHTTPHeaderField: "x-auth-room-participant")
                 request.addValue(X_API_ID, forHTTPHeaderField: "x-api-id")
-                let session = URLSession.shared
+                let configuration = URLSessionConfiguration.default
+                if #available(iOS 11, *) {
+                    configuration.waitsForConnectivity = true
+                }
+                let session = URLSession(configuration: configuration)
                 let task = session.dataTask(with: request, completionHandler: { data, response, error in
                     guard let data = data, error == nil else {
                         self.removeSpinner()
@@ -1153,7 +1179,11 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         request.addValue(authRoomParticipant, forHTTPHeaderField: "x-auth-room-participant")
         request.addValue(X_API_ID, forHTTPHeaderField: "x-api-id")
-        let session = URLSession.shared
+        let configuration = URLSessionConfiguration.default
+        if #available(iOS 11, *) {
+            configuration.waitsForConnectivity = true
+        }
+        let session = URLSession(configuration: configuration)
         let task = session.dataTask(with: request, completionHandler: { data, response, error in
             guard let data = data, error == nil else {
                 self.removeSpinner()
@@ -1683,7 +1713,6 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
         if (callerView == 0) {
             if(publisher != nil) {
                 publisherView?.frame = defineView(screenSize, pubViewPos!)
-//                self.setView(publisherView!, screenSize, pubViewPos!)
                 if (pubViewPos == 0) {
                     view.sendSubview(toBack: publisherView!)
                 } else {
@@ -1693,7 +1722,6 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
         } else if (callerView == 1) {
             if(subscriber != nil) {
                 subscriberView?.frame = defineView(screenSize, subViewPos!)
-//                self.setView(subscriberView!, screenSize, subViewPos!)
                 if (subViewPos == 0) {
                     view.sendSubview(toBack: subscriberView!)
                 } else {
@@ -1703,7 +1731,6 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
         } else if (callerView == 2) {
             if(subscriber2 != nil) {
                 subscriberView2?.frame = defineView(screenSize, subViewPos2!)
-//                self.setView(subscriberView2!, screenSize, subViewPos2!)
                 if (subViewPos2 == 0) {
                     view.sendSubview(toBack: subscriberView2!)
                 } else {
@@ -1713,7 +1740,6 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
         } else if (callerView == 3) {
             if(subscriber3 != nil) {
                 subscriberView3?.frame = defineView(screenSize, subViewPos3!)
-//                self.setView(subscriberView3!, screenSize, subViewPos3!)
                 if (subViewPos3 == 0) {
                     view.sendSubview(toBack: subscriberView3!)
                 } else {
@@ -2166,7 +2192,6 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
 
         publisherView?.addSubview(publisherToolBar!)
 
-//        publisherToolBar!.frame = CGRect(x: 0, y: 0, width: publisherView!.frame.width, height: publisherToolBar!.frame.height)
         publisherToolBar!.translatesAutoresizingMaskIntoConstraints = false
         publisherToolBar!.leadingAnchor.constraint(equalTo: publisherView!.leadingAnchor).isActive = true
         publisherToolBar!.trailingAnchor.constraint(equalTo: publisherView!.trailingAnchor).isActive = true
@@ -2198,14 +2223,14 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
         if (publisherName.count > 0) {
             alertTitle = publisherName
         }
-        alertMsg = "O atendimento foi finalizado"
+        self.alertMsg = "O atendimento foi finalizado"
         subscriberView?.removeFromSuperview()
         itemsSub.removeAll()
         subViewPos = nil
         subscriber = nil
         subscriberView = nil
         subscriberName = ""
-        let alertController = UIAlertController(title: alertTitle, message: alertMsg, preferredStyle: UIAlertController.Style.alert)
+        let alertController = UIAlertController(title: alertTitle, message: self.alertMsg, preferredStyle: UIAlertController.Style.alert)
         alertController.addAction(UIAlertAction(title: "Sair da Sala", style: UIAlertAction.Style.default, handler: { action in
             self.closeSala()
             self.closeView()
@@ -2533,7 +2558,7 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
             
             if (stream.videoType == .camera) {
                 if (subscriberRole == "MMD") {
-                    let alertController = UIAlertController(title: alertTitle, message: alertMsg, preferredStyle: UIAlertController.Style.alert)
+                    let alertController = UIAlertController(title: alertTitle, message: self.alertMsg, preferredStyle: UIAlertController.Style.alert)
                     alertController.addAction(UIAlertAction(title: "Sair da Sala", style: UIAlertAction.Style.default, handler: { action in
                         self.closeSala()
                         self.closeView()
@@ -2559,7 +2584,7 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
             subscriberName2 = ""
             if (stream.videoType == .camera) {
                 if (subscriberRole2 == "MMD") {
-                    let alertController = UIAlertController(title: alertTitle, message: alertMsg, preferredStyle: UIAlertController.Style.alert)
+                    let alertController = UIAlertController(title: alertTitle, message: self.alertMsg, preferredStyle: UIAlertController.Style.alert)
                     alertController.addAction(UIAlertAction(title: "Sair da Sala", style: UIAlertAction.Style.default, handler: { action in
                         self.closeSala()
                         self.closeView()
@@ -2576,7 +2601,7 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
             self.showAlertAuto(self, dismissTime: 3)
         }
         if (subscriber3?.session == nil && subscriberView3 != nil) {
-            alertMsg = subscriberName3 + " saiu da sala"
+            self.alertMsg = subscriberName3 + " saiu da sala"
             subscriberView3?.removeFromSuperview()
             participantName = subscriberName3
             itemsSub3.removeAll()
@@ -2586,7 +2611,7 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
             subscriberName3 = ""
             if (stream.videoType == .camera) {
                 if (subscriberRole3 == "MMD") {
-                    let alertController = UIAlertController(title: alertTitle, message: alertMsg, preferredStyle: UIAlertController.Style.alert)
+                    let alertController = UIAlertController(title: alertTitle, message: self.alertMsg, preferredStyle: UIAlertController.Style.alert)
                     alertController.addAction(UIAlertAction(title: "Sair da Sala", style: UIAlertAction.Style.default, handler: { action in
                         self.closeSala()
                         self.closeView()

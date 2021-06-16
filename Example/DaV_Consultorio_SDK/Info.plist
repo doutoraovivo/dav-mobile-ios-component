@@ -2,6 +2,14 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>This App needs to access your local network.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>This App needs to access your mic.</string>
+	<key>NSDocumentsFolderUsageDescription</key>
+	<string>This App needs to access your files.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>This App needs to use your camera.</string>
 	<key>CFBundleShortVersionString</key>
 	<string>1.0.10</string>
 	<key>CFBundleDevelopmentRegion</key>

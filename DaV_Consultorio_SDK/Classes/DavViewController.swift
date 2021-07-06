@@ -31,6 +31,63 @@ public struct FileShare {
     var fileShareParticipant:String
 }
 
+var alertHandler: AlertHandler? = nil
+
+typealias Completion = (() -> Void)
+
+struct Alert {
+    var alert: UIAlertController
+    var animated: Bool
+    var completion: Completion?
+}
+
+class AlertHandler {
+    
+    private var root: UIViewController
+
+    private var queue = [Alert]()
+    private var current: Alert?
+
+    init(_ root: UIViewController) {
+        self.root = root
+    }
+    
+    func present(_ alert: UIAlertController, animated: Bool, completion: (() -> Void)? = nil) {
+        self.queue.append(Alert(
+            alert: alert,
+            animated: animated,
+            completion: completion
+        ))
+        self.next()
+    }
+    
+    private func next() {
+        if self.current == nil {
+            if self.queue.count > 0 {
+                self.current = queue.removeFirst()
+                self.root.present(self.current!.alert, animated: self.current!.animated, completion: self.current!.completion)
+            }
+        }
+    }
+    
+    func checkForNext(alert: UIAlertController) {
+        self.current = nil
+        self.next()
+    }
+}
+
+extension UIAlertController {
+    open override func dismiss(animated flag: Bool, completion: (() -> Void)? = nil) {
+        super.dismiss(animated: flag, completion: completion)
+        alertHandler!.checkForNext(alert: self)
+    }
+    open override func viewDidDisappear(_ animated: Bool) {
+        alertHandler!.checkForNext(alert: self)
+    }
+}
+
+
+
 public class DavViewController: UIViewController, OTSessionDelegate, OTPublisherDelegate, OTSubscriberDelegate, chatViewControllerDelegate, archiveViewControllerDelegate, notesViewControllerDelegate, UIDocumentPickerDelegate, UIDocumentInteractionControllerDelegate {
         
     //variáveis gerais
@@ -195,7 +252,7 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
     var fileShareList : [FileShare] = [FileShare]()
     var notesSaved:String=""
     var recordId:String=""
-
+    
     private func connectionError() {
                 
         let alert = UIAlertController(title: "Erro de Conexão", message: "Não foi possível se conectar aos servidores. Gostaria de tentar novamente?", preferredStyle: .alert)
@@ -209,7 +266,7 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
             self.connectToAnOpenTokSession()
         }))
 
-        self.present(alert, animated: true)
+        alertHandler!.present(alert, animated: true)
     }
     
     public func sessionDidBeginReconnecting(_ session: OTSession) {
@@ -237,6 +294,8 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
     
     public override func viewDidAppear(_ animated: Bool) {
         print("bundle: \(DavViewController.getBundle)")
+        
+        alertHandler = AlertHandler(self)
         
         UserDefaults.standard.set(false, forKey: "_UIConstraintBasedLayoutLogUnsatisfiable");
 
@@ -374,7 +433,7 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
         }
         let alertController = UIAlertController(title: alertTitle, message: self.alertMsg, preferredStyle: UIAlertController.Style.alert)
         alertController.addAction(UIAlertAction(title: "OK", style: UIAlertAction.Style.default, handler: nil))
-        present(alertController, animated: true, completion: nil)
+        alertHandler!.present(alertController, animated: true, completion: nil)
     }
 
     @IBAction func showAlertClose(_ sender: Any){
@@ -384,25 +443,31 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
         }
         let alertController = UIAlertController(title: alertTitle, message: self.alertMsg, preferredStyle: UIAlertController.Style.alert)
         alertController.addAction(UIAlertAction(title: "OK", style: UIAlertAction.Style.default, handler: { action in self.closeView() }))
-        present(alertController, animated: true, completion: nil)
+        alertHandler!.present(alertController, animated: true, completion: nil)
     }
 
     @IBAction func showAlertAuto(_ sender: Any, dismissTime: Int){
-        var alertTitle:String="Doutor Ao Vivo"
-        if (publisherName.count > 0) {
-            alertTitle = publisherName
-        }
-        var secondsToDismiss:Int=dismissTime
-        if (dismissTime == 0) {
-            secondsToDismiss = 3
-        }
-        let alertController = UIAlertController(title: alertTitle, message: self.alertMsg, preferredStyle: UIAlertController.Style.alert)
-        present(alertController, animated: true, completion: nil)
-        // change to desired number of seconds (in this case 5 seconds)
-        let when = DispatchTime.now() + DispatchTimeInterval.seconds(secondsToDismiss)
-        DispatchQueue.main.asyncAfter(deadline: when){
-          // your code with delay
-          alertController .dismiss(animated: true, completion: nil)
+        if highPriority {
+            
+        } else {
+            var alertTitle:String="Doutor Ao Vivo"
+            if (publisherName.count > 0) {
+                alertTitle = publisherName
+            }
+            var secondsToDismiss:Int=dismissTime
+            if (dismissTime == 0) {
+                secondsToDismiss = 3
+            }
+            let alertController = UIAlertController(title: alertTitle, message: self.alertMsg, preferredStyle: UIAlertController.Style.alert)
+            
+            alertHandler!.present(alertController, animated: true, completion: {
+                // change to desired number of seconds (in this case 5 seconds)
+                let when = DispatchTime.now() + DispatchTimeInterval.seconds(secondsToDismiss)
+                DispatchQueue.main.asyncAfter(deadline: when){
+                   alertController.dismiss(animated: true, completion: nil)
+                }
+            })
+
         }
     }
     
@@ -828,36 +893,38 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
     
     func saveMessageToServer() {
         let txtMsg:String = chatController!.txfChatMsg!.text!
-        let objMsg: [String:Any] = [
-            "message":"\(txtMsg)",
-            "participantName":"\(publisherName)"
-        ]
-        self.view.endEditing(true)
-        chatController!.txfChatMsg!.text = ""
-        let jsonMsg = try? JSONSerialization.data(withJSONObject: objMsg)
-        var request = URLRequest(url: URL(string: domain + urlSaveMessage + appointmentId)!)
-        request.httpMethod = "PUT"
-        request.httpBody = jsonMsg
-        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.addValue(authRoomParticipant, forHTTPHeaderField: "x-auth-room-participant")
-        request.addValue(X_API_ID, forHTTPHeaderField: "x-api-id")
-        let configuration = URLSessionConfiguration.default
-        if #available(iOS 11, *) {
-            configuration.waitsForConnectivity = true
-        }
-        let session = URLSession(configuration: configuration)
-        let task = session.dataTask(with: request, completionHandler: { data, response, error in
-            guard let data = data, error == nil else { return }
-            DispatchQueue.main.async {
-                do {
-                    let json = try JSONSerialization.jsonObject(with: data) as! Dictionary<String, AnyObject>
-                    self.sendChatMessage(txtMsg: txtMsg)
-                    print(json)
-                } catch {
-                }
+        if !txtMsg.isEmpty {
+            let objMsg: [String:Any] = [
+                "message":"\(txtMsg)",
+                "participantName":"\(publisherName)"
+            ]
+            self.view.endEditing(true)
+            chatController!.txfChatMsg!.text = ""
+            let jsonMsg = try? JSONSerialization.data(withJSONObject: objMsg)
+            var request = URLRequest(url: URL(string: domain + urlSaveMessage + appointmentId)!)
+            request.httpMethod = "PUT"
+            request.httpBody = jsonMsg
+            request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.addValue(authRoomParticipant, forHTTPHeaderField: "x-auth-room-participant")
+            request.addValue(X_API_ID, forHTTPHeaderField: "x-api-id")
+            let configuration = URLSessionConfiguration.default
+            if #available(iOS 11, *) {
+                configuration.waitsForConnectivity = true
             }
-        })
-        task.resume()
+            let session = URLSession(configuration: configuration)
+            let task = session.dataTask(with: request, completionHandler: { data, response, error in
+                guard let data = data, error == nil else { return }
+                DispatchQueue.main.async {
+                    do {
+                        let json = try JSONSerialization.jsonObject(with: data) as! Dictionary<String, AnyObject>
+                        self.sendChatMessage(txtMsg: txtMsg)
+                        print(json)
+                    } catch {
+                    }
+                }
+            })
+            task.resume()
+        }
     }
     
     func selectFileToSend() {
@@ -2216,26 +2283,26 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
         self.removeSpinner()
         self.runTimer()
     }
+    
+    private var highPriority: Bool = false
 
     public func sessionDidDisconnect(_ session: OTSession) {
         print("The client disconnected from the OpenTok session.")
+        
         var alertTitle:String="Doutor Ao Vivo"
         if (publisherName.count > 0) {
             alertTitle = publisherName
         }
         self.alertMsg = "O atendimento foi finalizado"
-        subscriberView?.removeFromSuperview()
-        itemsSub.removeAll()
-        subViewPos = nil
-        subscriber = nil
-        subscriberView = nil
-        subscriberName = ""
-        let alertController = UIAlertController(title: alertTitle, message: self.alertMsg, preferredStyle: UIAlertController.Style.alert)
+                
+        let alertController = UIAlertController(title: alertTitle, message: self.alertMsg, preferredStyle: .alert)
+        
         alertController.addAction(UIAlertAction(title: "Sair da Sala", style: UIAlertAction.Style.default, handler: { action in
             self.closeSala()
             self.closeView()
         }))
-        present(alertController, animated: true, completion: nil)
+
+        alertHandler!.present(alertController, animated: true)
     }
 
     public func session(_ session: OTSession, didFailWithError error: OTError) {
@@ -2520,110 +2587,113 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
     }
     
     public func session(_ session: OTSession, streamDestroyed stream: OTStream) {
-        var participantName:String;
-        
-        var alertTitle:String="Doutor Ao Vivo"
-        if (publisherName.count > 0) {
-            alertTitle = publisherName
-        }
-
-        /// Caso seja a mesma conexão, alterna para o último
-        if (stream.connection.connectionId == subscriber?.stream?.connection.connectionId) {
-            toggleCamSub(sender: nil);
-        }
-
-        if (stream.connection.connectionId == subscriber2?.stream?.connection.connectionId) {
-            toggleCamSub2(sender: nil);
-        }
-        if (stream.connection.connectionId == subscriber3?.stream?.connection.connectionId) {
-            toggleCamSub3(sender: nil);
-        }
-        
-        /// Correção Temporária quando uma view deixa um espaço entre views
-        if (pubViewPos! > 1) {
-            toggleCamPub(sender: nil)
-            toggleCamSub(sender: nil)
-        } else {
-            toggleCamSub(sender: nil)
-        }
-
-        if (subscriber?.session == nil && subscriberView != nil) {
-            subscriberView?.removeFromSuperview()
-            participantName = subscriberName
-            itemsSub.removeAll()
-            subViewPos = nil
-            subscriber = nil
-            subscriberView = nil
-            subscriberName = ""
+        print(session.sessionConnectionStatus)
+        if session.sessionConnectionStatus == .connected {
+            var participantName:String;
             
-            if (stream.videoType == .camera) {
-                if (subscriberRole == "MMD") {
-                    let alertController = UIAlertController(title: alertTitle, message: self.alertMsg, preferredStyle: UIAlertController.Style.alert)
-                    alertController.addAction(UIAlertAction(title: "Sair da Sala", style: UIAlertAction.Style.default, handler: { action in
-                        self.closeSala()
-                        self.closeView()
-                    }))
-                    alertController.addAction(UIAlertAction(title: "Aguardar", style: UIAlertAction.Style.default, handler: { action in
-                        alertController.dismiss(animated: true)
-                    }))
-                    present(alertController, animated: true, completion: nil)
-                }
-                self.alertMsg = participantName + " saiu da sala"
-            } else {
-                self.alertMsg = participantName + " parou de apresentar a tela"
+            var alertTitle:String="Doutor Ao Vivo"
+            if (publisherName.count > 0) {
+                alertTitle = publisherName
             }
-            self.showAlertAuto(self, dismissTime: 3)
-        }
-        if (subscriber2?.session == nil && subscriberView2 != nil) {
-            subscriberView2?.removeFromSuperview()
-            participantName = subscriberName2
-            itemsSub2.removeAll()
-            subViewPos2 = nil
-            subscriber2 = nil
-            subscriberView2 = nil
-            subscriberName2 = ""
-            if (stream.videoType == .camera) {
-                if (subscriberRole2 == "MMD") {
-                    let alertController = UIAlertController(title: alertTitle, message: self.alertMsg, preferredStyle: UIAlertController.Style.alert)
-                    alertController.addAction(UIAlertAction(title: "Sair da Sala", style: UIAlertAction.Style.default, handler: { action in
-                        self.closeSala()
-                        self.closeView()
-                    }))
-                    alertController.addAction(UIAlertAction(title: "Aguardar", style: UIAlertAction.Style.default, handler: { action in
-                        alertController.dismiss(animated: true)
-                    }))
-                    present(alertController, animated: true, completion: nil)
-                }
-                self.alertMsg = participantName + " saiu da sala"
-            } else {
-                self.alertMsg = participantName + " parou de apresentar a tela"
+
+            /// Caso seja a mesma conexão, alterna para o último
+            if (stream.connection.connectionId == subscriber?.stream?.connection.connectionId) {
+                toggleCamSub(sender: nil);
             }
-            self.showAlertAuto(self, dismissTime: 3)
-        }
-        if (subscriber3?.session == nil && subscriberView3 != nil) {
-            self.alertMsg = subscriberName3 + " saiu da sala"
-            subscriberView3?.removeFromSuperview()
-            participantName = subscriberName3
-            itemsSub3.removeAll()
-            subViewPos3 = nil
-            subscriber3 = nil
-            subscriberView3 = nil
-            subscriberName3 = ""
-            if (stream.videoType == .camera) {
-                if (subscriberRole3 == "MMD") {
-                    let alertController = UIAlertController(title: alertTitle, message: self.alertMsg, preferredStyle: UIAlertController.Style.alert)
-                    alertController.addAction(UIAlertAction(title: "Sair da Sala", style: UIAlertAction.Style.default, handler: { action in
-                        self.closeSala()
-                        self.closeView()
-                    }))
-                    alertController.addAction(UIAlertAction(title: "Aguardar", style: UIAlertAction.Style.default, handler: { action in
-                        alertController.dismiss(animated: true)
-                    }))
-                    present(alertController, animated: true, completion: nil)
-                }
-                self.alertMsg = participantName + " saiu da sala"
+
+            if (stream.connection.connectionId == subscriber2?.stream?.connection.connectionId) {
+                toggleCamSub2(sender: nil);
+            }
+            if (stream.connection.connectionId == subscriber3?.stream?.connection.connectionId) {
+                toggleCamSub3(sender: nil);
+            }
+            
+            /// Correção Temporária quando uma view deixa um espaço entre views
+            if (pubViewPos! > 1) {
+                toggleCamPub(sender: nil)
+                toggleCamSub(sender: nil)
             } else {
-                self.alertMsg = participantName + " parou de apresentar a tela"
+                toggleCamSub(sender: nil)
+            }
+
+            if (subscriber?.session == nil && subscriberView != nil) {
+                subscriberView?.removeFromSuperview()
+                participantName = subscriberName
+                itemsSub.removeAll()
+                subViewPos = nil
+                subscriber = nil
+                subscriberView = nil
+                subscriberName = ""
+                
+                if (stream.videoType == .camera) {
+                    if (subscriberRole == "MMD") {
+                        let alertController = UIAlertController(title: alertTitle, message: self.alertMsg, preferredStyle: UIAlertController.Style.alert)
+                        alertController.addAction(UIAlertAction(title: "Sair da Sala", style: UIAlertAction.Style.default, handler: { action in
+                            self.closeSala()
+                            self.closeView()
+                        }))
+                        alertController.addAction(UIAlertAction(title: "Aguardar", style: UIAlertAction.Style.default, handler: { action in
+                            alertController.dismiss(animated: true)
+                        }))
+                        alertHandler!.present(alertController, animated: true, completion: nil)
+                    }
+                    self.alertMsg = participantName + " saiu da sala"
+                } else {
+                    self.alertMsg = participantName + " parou de apresentar a tela"
+                }
+                self.showAlertAuto(self, dismissTime: 3)
+            }
+            if (subscriber2?.session == nil && subscriberView2 != nil) {
+                subscriberView2?.removeFromSuperview()
+                participantName = subscriberName2
+                itemsSub2.removeAll()
+                subViewPos2 = nil
+                subscriber2 = nil
+                subscriberView2 = nil
+                subscriberName2 = ""
+                if (stream.videoType == .camera) {
+                    if (subscriberRole2 == "MMD") {
+                        let alertController = UIAlertController(title: alertTitle, message: self.alertMsg, preferredStyle: UIAlertController.Style.alert)
+                        alertController.addAction(UIAlertAction(title: "Sair da Sala", style: UIAlertAction.Style.default, handler: { action in
+                            self.closeSala()
+                            self.closeView()
+                        }))
+                        alertController.addAction(UIAlertAction(title: "Aguardar", style: UIAlertAction.Style.default, handler: { action in
+                            alertController.dismiss(animated: true)
+                        }))
+                        alertHandler!.present(alertController, animated: true, completion: nil)
+                    }
+                    self.alertMsg = participantName + " saiu da sala"
+                } else {
+                    self.alertMsg = participantName + " parou de apresentar a tela"
+                }
+                self.showAlertAuto(self, dismissTime: 3)
+            }
+            if (subscriber3?.session == nil && subscriberView3 != nil) {
+                self.alertMsg = subscriberName3 + " saiu da sala"
+                subscriberView3?.removeFromSuperview()
+                participantName = subscriberName3
+                itemsSub3.removeAll()
+                subViewPos3 = nil
+                subscriber3 = nil
+                subscriberView3 = nil
+                subscriberName3 = ""
+                if (stream.videoType == .camera) {
+                    if (subscriberRole3 == "MMD") {
+                        let alertController = UIAlertController(title: alertTitle, message: self.alertMsg, preferredStyle: UIAlertController.Style.alert)
+                        alertController.addAction(UIAlertAction(title: "Sair da Sala", style: UIAlertAction.Style.default, handler: { action in
+                            self.closeSala()
+                            self.closeView()
+                        }))
+                        alertController.addAction(UIAlertAction(title: "Aguardar", style: UIAlertAction.Style.default, handler: { action in
+                            alertController.dismiss(animated: true)
+                        }))
+                        alertHandler!.present(alertController, animated: true, completion: nil)
+                    }
+                    self.alertMsg = participantName + " saiu da sala"
+                } else {
+                    self.alertMsg = participantName + " parou de apresentar a tela"
+                }
             }
         }
     }
@@ -2745,5 +2815,3 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
     public func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
     }
 }
-
-

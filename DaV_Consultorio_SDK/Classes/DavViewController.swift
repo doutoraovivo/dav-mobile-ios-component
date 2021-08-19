@@ -76,17 +76,17 @@ class AlertHandler {
     }
 }
 
-extension UIAlertController {
-    open override func dismiss(animated flag: Bool, completion: (() -> Void)? = nil) {
+class DAVAlertController: UIAlertController {
+    override func dismiss(animated flag: Bool, completion: (() -> Void)? = nil) {
         super.dismiss(animated: flag, completion: completion)
-        alertHandler!.checkForNext(alert: self)
+        alertHandler?.checkForNext(alert: self)
     }
-    open override func viewDidDisappear(_ animated: Bool) {
-        alertHandler!.checkForNext(alert: self)
+    
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        alertHandler?.checkForNext(alert: self)
     }
 }
-
-
 
 public class DavViewController: UIViewController, OTSessionDelegate, OTPublisherDelegate, OTSubscriberDelegate, chatViewControllerDelegate, archiveViewControllerDelegate, notesViewControllerDelegate, UIDocumentPickerDelegate, UIDocumentInteractionControllerDelegate {
         
@@ -266,7 +266,7 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
             self.connectToAnOpenTokSession()
         }))
 
-        alertHandler!.present(alert, animated: true)
+        alertHandler?.present(alert, animated: true)
     }
     
     public func sessionDidBeginReconnecting(_ session: OTSession) {
@@ -433,7 +433,7 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
         }
         let alertController = UIAlertController(title: alertTitle, message: self.alertMsg, preferredStyle: UIAlertController.Style.alert)
         alertController.addAction(UIAlertAction(title: "OK", style: UIAlertAction.Style.default, handler: nil))
-        alertHandler!.present(alertController, animated: true, completion: nil)
+        alertHandler?.present(alertController, animated: true, completion: nil)
     }
 
     @IBAction func showAlertClose(_ sender: Any){
@@ -443,7 +443,7 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
         }
         let alertController = UIAlertController(title: alertTitle, message: self.alertMsg, preferredStyle: UIAlertController.Style.alert)
         alertController.addAction(UIAlertAction(title: "OK", style: UIAlertAction.Style.default, handler: { action in self.closeView() }))
-        alertHandler!.present(alertController, animated: true, completion: nil)
+        alertHandler?.present(alertController, animated: true, completion: nil)
     }
 
     @IBAction func showAlertAuto(_ sender: Any, dismissTime: Int){
@@ -460,7 +460,7 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
             }
             let alertController = UIAlertController(title: alertTitle, message: self.alertMsg, preferredStyle: UIAlertController.Style.alert)
             
-            alertHandler!.present(alertController, animated: true, completion: {
+            alertHandler?.present(alertController, animated: true, completion: {
                 // change to desired number of seconds (in this case 5 seconds)
                 let when = DispatchTime.now() + DispatchTimeInterval.seconds(secondsToDismiss)
                 DispatchQueue.main.asyncAfter(deadline: when){
@@ -2302,7 +2302,7 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
             self.closeView()
         }))
 
-        alertHandler!.present(alertController, animated: true)
+        alertHandler?.present(alertController, animated: true)
     }
 
     public func session(_ session: OTSession, didFailWithError error: OTError) {
@@ -2635,7 +2635,7 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
                         alertController.addAction(UIAlertAction(title: "Aguardar", style: UIAlertAction.Style.default, handler: { action in
                             alertController.dismiss(animated: true)
                         }))
-                        alertHandler!.present(alertController, animated: true, completion: nil)
+                        alertHandler?.present(alertController, animated: true, completion: nil)
                     }
                     self.alertMsg = participantName + " saiu da sala"
                 } else {
@@ -2661,7 +2661,7 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
                         alertController.addAction(UIAlertAction(title: "Aguardar", style: UIAlertAction.Style.default, handler: { action in
                             alertController.dismiss(animated: true)
                         }))
-                        alertHandler!.present(alertController, animated: true, completion: nil)
+                        alertHandler?.present(alertController, animated: true, completion: nil)
                     }
                     self.alertMsg = participantName + " saiu da sala"
                 } else {
@@ -2688,7 +2688,7 @@ public class DavViewController: UIViewController, OTSessionDelegate, OTPublisher
                         alertController.addAction(UIAlertAction(title: "Aguardar", style: UIAlertAction.Style.default, handler: { action in
                             alertController.dismiss(animated: true)
                         }))
-                        alertHandler!.present(alertController, animated: true, completion: nil)
+                        alertHandler?.present(alertController, animated: true, completion: nil)
                     }
                     self.alertMsg = participantName + " saiu da sala"
                 } else {
